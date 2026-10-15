@@ -20,7 +20,8 @@ lapply(c(
   "dplyr", "ggplot2", "ggpubr", "stringr",
   "purrr", "tidyverse", "here", "broom", "tibble",
   "googledrive", "googlesheets4", "data.table", 
-  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr", "ggpattern"), 
+  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr", "ggpattern", "stringr"
+), 
   library, character.only = TRUE)
 
 ```
@@ -36,10 +37,11 @@ lapply(c(
   run_notes = "" #any notes from the run
   
   Project_name = "COMPASS" #LTREB/SMARTX/GENX
-  samples <- c("GCW", "GWI", "MSM", "SWH") #whatever identifies your samples within the same names 
-  samples_pattern <- paste(samples, collapse = "|") 
-    #samples_pattern <- "GCW" #use this instead of the line above if you have only one site code 
-  
+  Site <- c("GCW", "GWI", "MSM", "SWH") #whatever identifies your samples within the same names (TMP, FATE)
+  Site_pattern <- paste(Site, collapse = "|") 
+  Plot <- c("UP", "TR", "SWAMP", "WC", "SW") ##ALL for LTREB GCW samples
+  Plot_pattern <- paste(Plot, collapse = "|") 
+
   #Set time zone 
   common_tz = "Etc/GMT+5"
   Sys.setenv(TZ = "America/New_York")
@@ -118,6 +120,18 @@ raw_metadata <- read.csv(Raw_Metadata)
 ##Add anything here for formatting project-specific metadata - I wonder if we could make functions to run for each Project? 
 
 ```
+
+# Run Information
+
+**Run date:** `r Date_Run`  
+**Run by:** `r Run_by`  
+**Run notes:** `r run_notes`
+
+**SO4 file used:**
+- `r basename(raw_file_name_so4)`
+
+**Cl file used:**
+- `r basename(raw_file_name_cl)`
 
 ##Import Sample Data 
 ```{r import data, include=FALSE}
@@ -790,33 +804,13 @@ dilutions <- read.csv("Dilution_Lookup_Table.csv")
 dilutions <- dilutions %>% 
   filter(Project == Project_name)
 
-
-library(dplyr)
-library(stringr)
-library(purrr)
-
-# df1 contains Sample_ID
-# df2 contains Site, Plot, Dilution
-
+##Add dilutions to dataframe
 all_dat <- all_dat %>%
-  mutate(
-    Dilution = 
-      ifelse(Project == "LTREB|SMARTX|GENX", Dilution = mean(dilutions$Dilution), 
-      
-      map_dbl(sample_ID, function(id) {
-      matches <- dilutions %>%
-        filter(
-          str_detect(id, fixed(Site)) &
-          str_detect(id, fixed(Plot))
-        )
-
-      if (nrow(matches) == 1) {
-        matches$Dilution
-      } else {
-        NA_real_
-      }
-    })
-  ))
+  filter(sample_ID != "Lab Blank") %>% 
+  filter(!str_detect(sample_ID, "Standard")) %>% 
+  mutate(Site = ifelse(str_detect(sample_ID, Site_pattern), str_extract(sample_ID, Site_pattern), Site_pattern)) %>% 
+  mutate(Plot = ifelse(str_detect(sample_ID, Plot_pattern), str_extract(sample_ID, Plot_pattern), Plot_pattern)) %>% 
+  left_join(dilutions, by = c("Site", "Plot"))
 
 
 ```
