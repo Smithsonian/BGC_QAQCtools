@@ -1,0 +1,112 @@
+
+## Visualize Data by Plot   
+```{r Visualize Data, echo=FALSE, warning=FALSE}
+
+#Plot samples to get a first look at concentrations (sanity check)
+data_plotting <- df_all_clean
+
+#Remove Lucie's test samples
+data_plotting <- data_plotting %>%  
+  filter(!str_detect(sample_name, "Lucie")) 
+
+#Order by Zone from Upland to Surface Water
+data_plotting$Zone = factor(data_plotting$Zone, levels = c("UP",  "SWAMP", "TR", "WC", "SW"))
+data_plotting <- data_plotting[order(data_plotting$Zone), ]
+
+#group the data for plotting
+data_plotting <- data_plotting %>%
+  group_by(Site_Code) %>%
+  mutate(row_num = factor(row_number())) %>%  # create row_num as factor per group
+  ungroup()
+
+#Plot data and change colors based on Zone:
+viz_cl_plot <- ggplot(data_plotting, aes(x = row_num, y = Cl_ppm, fill = Zone)) +
+  geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) +
+  facet_grid(~ Site_Code, scales="free_x") +
+  scale_fill_manual(values = c(
+    "UP" = "#20063B",
+    "SWAMP" = "darkgrey",
+    "TR" = "#FFBC42",
+    "WC" = "#419973",
+    "SW" = "#25ABE6"
+  )) +
+  theme_classic() +
+  theme(axis.text.x = element_blank()) +
+  labs(x = " ", y = "Cl (mg/L)", title = "Samples: Chloride") +
+  scale_x_discrete(drop = TRUE)
+
+
+viz_so4_plot <-  ggplot(data_plotting, aes(x = row_num, y = SO4_ppm, fill = Zone)) +
+  geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) +
+  facet_grid(~ Site_Code, scales="free_x") +
+  scale_fill_manual(values = c(
+    "UP" = "#20063B",
+    "SWAMP" = "darkgrey",
+    "TR" = "#FFBC42",
+    "WC" = "#419973",
+    "SW" = "#25ABE6"
+  )) +
+  theme_classic() +
+  theme(axis.text.x = element_blank()) +
+  labs(x = " ", y = "SO4 (mg/L)", title = "Samples: SO4") +
+  scale_x_discrete(drop = TRUE)
+
+ggarrange(viz_cl_plot, viz_so4_plot, nrow=2, ncol=1)
+
+
+```
+
+## Export Processed Data  
+```{r Export Processed Data, echo=FALSE, include = FALSE}
+
+#Prepare data to be exported - if there is anything else to add 
+#Add any necessary identifiers to the samples  ### VERY IMPORTANT AND STANDARD FOR PROJECT ####
+  #example read in sample IDs list and merge 
+  #create required ID columns in R, etc. 
+final_data <- df_all_clean %>% 
+  filter(str_detect(sample_name, "GCW|GWI|MSM|SWH")) %>%
+  mutate(
+    Project = "COMPASS: Synoptic",   # new column with same value on every row
+    Region = "CB",
+    Run_notes = run_notes,     # new column with notes about the run
+    Analysis_rundate = print(Date_Run)
+  ) 
+
+colnames(final_data)
+
+final_data <- final_data %>%
+  rename(
+    Time = Time..24hr.,
+    Time_Zone = Time.Zone_EDT.EST,
+    Replicate = Lysimeter,
+    Sample_ID = sample_ID,
+    Field_notes = Field.Notes,
+    Site = Site_Code
+    # add more rename pairs as needed
+  ) %>%
+  select(
+    Project, Region, Site, Zone, Replicate, Depth_cm, 
+         Sample_ID, Year, Month, Day, Time, Time_Zone,
+         SO4_ppm, SO4_Conc_mM, SO4_Conc_flag, SO4_QAQC_flag, Cl_ppm, Cl_Conc_mM, Cl_Conc_flag, Cl_QAQC_flag, salinity,
+         Analysis_rundate,  Run_notes, Field_notes
+        # list columns in the order you want them
+  )
+
+##Change any SO4/Cl conc's of NA to 0 
+final_data$SO4_Conc_mM[is.na(final_data$SO4_Conc_mM)] <- 0
+final_data$Cl_Conc_mM[is.na(final_data$Cl_Conc_mM)] <- 0
+final_data$SO4_ppm[is.na(final_data$SO4_ppm)] <- 0
+final_data$Cl_ppm[is.na(final_data$Cl_ppm)] <- 0
+
+final_data$salinity <- ifelse(final_data$Cl_ppm == 0, 2.6e-05, final_data$salinity)
+
+head(final_data)
+
+#will put final data in processed data folder 
+#Write out data frame 
+  write.csv(final_data, processed_file_name)
+
+```
+
+
+#end
