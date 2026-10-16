@@ -20,7 +20,8 @@ lapply(c(
   "dplyr", "ggplot2", "ggpubr", "stringr",
   "purrr", "tidyverse", "here", "broom", "tibble",
   "googledrive", "googlesheets4", "data.table", 
-  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr", "ggpattern", "stringr"
+  "matrixStats", "gridExtra", "grid", "tidyverse", 
+  "knitr", "ggpattern", "stringr", "lubridate"
 ), 
   library, character.only = TRUE)
 
@@ -36,10 +37,11 @@ lapply(c(
   Script_run_by = "Zoe Read" #Code user 
   run_notes = "" #any notes from the run
   
-  Project_name = "COMPASS" #LTREB/SMARTX/GENX
-  Site <- c("GCW", "GWI", "MSM", "SWH") #whatever identifies your samples within the same names (TMP, FATE)
+  Project_name <- "COMPASS:Synoptic" #LTREB/SMARTX/GENX/COMPASS:TEMPEST
+  Site <- c("GCW", "GWI", "MSM", "SWH") #whatever identifies your samples within the same names (TMP, FATE); Use "GCW" for LTREB site
   Site_pattern <- paste(Site, collapse = "|") 
-  Plot <- c("UP", "TR", "SWAMP", "WC", "SW") ##ALL for LTREB GCW samples
+  
+  Plot <- c("UP", "TR", "SWAMP", "WC", "SW") ##Use "ALL" for LTREB sample plots
   Plot_pattern <- paste(Plot, collapse = "|") 
 
   #Set time zone 
@@ -56,7 +58,27 @@ lapply(c(
   New_IDs <- c(NA)
   IDs_to_change <- data.frame(sample_ID, New_IDs)
 
+##### Project-specific R Scripts ####
+viz_script <- switch(
+  Project_name,
+  "COMPASS:TEMPEST" = "COMPASS_TEMPEST_viz.R",
+  "COMPASS:Synoptic" = "COMPASS_Synoptic_metadata_and_viz.Rmd",
+  "LTREB" = "LTREB_viz.R", 
+  "SMARTX" = "SMARTX_viz.R", 
+  "GENX" = "GENX_viz.R", 
+  "FATE" = "FATE_viz.R", 
+)
   
+
+external_code <- knitr::purl(
+  viz_script,
+  output = tempfile(fileext = ".R"),
+  documentation = 2
+)
+
+knitr::read_chunk(external_code)
+
+   
 ###### File Names - PLEASE CHANGE 
 #file path and name for raw summary data file 
   raw_file_name_cl = "Raw Data/COMPASS_Synoptic_CB_MonMon_202607_MSM_GWI_Cl.txt"
@@ -64,11 +86,10 @@ lapply(c(
 
 #file path and name of processed data file 
   processed_file_name = "Processed Data/COMPASS_SynopticCB_PW_Processed_Cl_SO4_MSM_GWI_202607.csv" 
-
   
 ###### Log Files - PLEASE CHECK 
 #downloaded metadata csv - downloaded from Google drive as csv for this year
-  Raw_Metadata = "Raw Data/COMPASS_SynopticCB_PW_SampleLog_2026.csv"
+  Metadata = "Raw Data/COMPASS_SynopticCB_PW_SampleLog_2026.csv"
   
 #qaqc log file path for this year 
   Log_path = "Raw Data/COMPASS_Synoptic_Cl_SO4_QAQClog_2026.csv"
@@ -114,11 +135,13 @@ lapply(c(
 
 ##Read in metadata
 ```{r pull in metadata for later, include=FALSE}
+metadata <- read.csv(Metadata)
+```
 
-raw_metadata <- read.csv(Raw_Metadata)
-
-##Add anything here for formatting project-specific metadata - I wonder if we could make functions to run for each Project? 
-
+##Pulls in Project-Specific Metadata cleaning chunk
+```{r clean_metadata_output, echo=TRUE}
+code <- knitr::knit_code$get("clean_metadata")
+eval(parse(text = code))
 ```
 
 # Run Information
@@ -330,34 +353,38 @@ SO4_stds_plot
 #check for the a slope QAQC file, if there is not one, make one 
 if (file.exists(Log_path)) {
   # If it exists, read it back into R
-  log <- read.csv(Log_path)
+  log_raw <- read.csv(Log_path)
   print("QAQC log file exists and has been read into the code.")
   } else {
   # If it does not exist, create the CSV file
-  log <- as.data.frame(matrix(ncol = 7, nrow = 0))
-  colnames(log) <- c( "X", "r2", "analyte", "curve", "run_date", "slope", "intercept")
+  log_raw <- as.data.frame(matrix(ncol = 7, nrow = 0))
+  colnames(log_raw) <- c( "X", "r2", "analyte", "curve", "run_date", "slope", "intercept")
   
   # Write add_log to CSV
-  write.csv(log, file = Log_path, row.names = FALSE)
+  write.csv(log_raw, file = Log_path, row.names = FALSE)
   print("QAQC log file does not exist. It has been created.")
   }
 
-log <- log[ ,-c(1)]
+log_raw <- log_raw[ ,-c(1)]
 
 #make sure they both have dates in Date format
-log$run_date <- as.Date(log$run_date, format = "%Y-%m-%d")
-log$analyte <- as.character(log$analyte)
-log$curve <- as.character(log$curve)
+log_raw$run_date <- as.Date(parse_date_time(log_raw$run_date, orders = c("ymd", "mdy")))
+log_raw$analyte <- as.character(log_raw$analyte)
+log_raw$curve <- as.character(log_raw$curve)
 Slopes$run_date <- as.Date(Slopes$run_date)
 
 # Filter to only rows in Slopes that are NOT already in log (by run_date + analyte)
-new_rows <- anti_join(Slopes, log, by = c("run_date", "analyte"))
+new_rows <- anti_join(Slopes, log_raw, by = c("run_date", "analyte"))
 
 # Append the new, non-duplicate rows to log
-log <- bind_rows(log, new_rows)
+log <- bind_rows(log_raw, new_rows)
+
+##Filter for the past 6 months of data for graphing
+log_plotting <- log %>% 
+  filter(run_date >= Date_Run %m-% months(6))
 
 #plot the current slopes with the previous slopes 
-Slopes_chk <- ggplot(log, aes(run_date, slope, col=curve)) +
+Slopes_chk <- ggplot(log_plotting, aes(run_date, slope, col=curve)) +
   geom_point(size=4) + 
   geom_point(data = log %>% filter(run_date %in% Date_Run),color = "yellow", size=4) + 
   geom_line() + 
@@ -365,9 +392,8 @@ Slopes_chk <- ggplot(log, aes(run_date, slope, col=curve)) +
   scale_color_manual(values=c("blue", "purple"))
 Slopes_chk
 
-
 #plot the current top standard areas with the previous areas 
-areas_chk <- ggplot(log, aes(run_date, top_std_area, col=curve)) +
+areas_chk <- ggplot(log_plotting, aes(run_date, top_std_area, col=curve)) +
   geom_point(size=4) + 
   geom_point(data = log %>% filter(run_date %in% Date_Run),color = "yellow", size=4) + 
   geom_line() + 
@@ -805,7 +831,7 @@ dilutions <- dilutions %>%
   filter(Project == Project_name)
 
 ##Add dilutions to dataframe
-all_dat <- all_dat %>%
+all_dat_dil <- all_dat %>%
   filter(sample_ID != "Lab Blank") %>% 
   filter(!str_detect(sample_ID, "Standard")) %>% 
   mutate(Site = ifelse(str_detect(sample_ID, Site_pattern), str_extract(sample_ID, Site_pattern), Site_pattern)) %>% 
@@ -815,21 +841,19 @@ all_dat <- all_dat %>%
 
 ```
 
-
-
 ## Assess Analytical Spikes
 ```{r Assess Spikes, echo=FALSE}
 
 #pull out any rows that have "spk" in the Sample ID column
-spks <- all_dat %>%  
-  select(!c(sample_name, sample_type, SO4_area, Cl_ppm, Cl_Conc_mM, Cl_area, Cl_QAQC_flag, SO4_QAQC_flag, salinity, Dilution)) %>%
+spks <- all_dat_dil %>%  
+  select(!c(sample_name, sample_type, SO4_area, Cl_ppm, Cl_Conc_mM, Cl_area, Cl_QAQC_flag, SO4_QAQC_flag, salinity)) %>%
   filter(str_detect(sample_ID, "spk"))      #have to change this to match data
 # head(spks)
 
 #create a new dataframe and remove dups from sample dataframe 
-dat_spks <- all_dat %>%  
+dat_spks <- all_dat_dil %>%  
   filter(!str_detect(sample_ID, "spk")) %>%  
-  select(!c(sample_name, sample_type, SO4_area, Cl_ppm,  Cl_Conc_mM, Cl_area, Cl_QAQC_flag, SO4_QAQC_flag, salinity))
+  select(!c(sample_name, sample_type, SO4_area, Cl_ppm,  Cl_Conc_mM, Cl_area, Cl_QAQC_flag, SO4_QAQC_flag, salinity, Dilution, SampleVol, Site, Plot, Project))
 
 #remove the dup from these IDs so we will have duplicate sample names
 spks <- spks %>%
@@ -847,12 +871,6 @@ QAspks <- merge(dat_spks, spks, by = "sample_ID")
 #spike for these samples was 10uL of the 250 µg/mL SO4 standard
 QAspks$SO4_spk_Conc <- spk_Conc     # mmoles of SO4 in spike
 # head(QAspks)
-
-#Set Sample volumes in uL 
-QAspks$SampleVol <- 1
-QAspks$SampleVol <-  ifelse(QAspks$Dilution == 50, 1483, QAspks$SampleVol)
-QAspks$SampleVol <-  ifelse(QAspks$Dilution == 100, 1466, QAspks$SampleVol)
-QAspks$SampleVol <-  ifelse(QAspks$Dilution == 200, 1458, QAspks$SampleVol)
 
 #change sample volume to L 
 QAspks$SampleVol <- QAspks$SampleVol/Con1
@@ -922,11 +940,11 @@ if (Perc_spks$Percent <= chks_flag) {
 cat("Sample Flagging")
 
 #Dilute samples 
-all_dat$Cl_ppm_dil <- all_dat$Cl_ppm/all_dat$Dilution
-all_dat$SO4_ppm_dil <- all_dat$SO4_ppm/all_dat$Dilution
+all_dat_dil$Cl_ppm_dil <- all_dat_dil$Cl_ppm/all_dat_dil$Dilution
+all_dat_dil$SO4_ppm_dil <- all_dat_dil$SO4_ppm/all_dat_dil$Dilution
 
 #Remove standards
-dat_flagged <- all_dat %>%  
+dat_flagged <- all_dat_dil %>%  
             filter(!str_detect(sample_ID, "Standard")) %>%  
             filter(!str_detect(sample_ID, "Blank"))
 
@@ -987,31 +1005,17 @@ knitr::kable(Perc_Cl_flagged, caption = "Cl samples")
 ## Check to see if samples run match metadata & merge info
 ```{r check sample ids with metadata, echo=FALSE, warning = FALSE}
 
-#remove duplicates from the sample dataframe bc we are just taking the first dup run
+#remove checks from the sample dataframe
 all_data_flagged <- dat_flagged %>%
   filter(!str_detect(sample_ID, "dup")) %>%
   filter(!str_detect(sample_ID, "Lab Blank")) %>%
-  filter(!str_detect(sample_ID, "spk")) %>%
-  mutate(sample_ID = sub("^[^_]+_", "", sample_ID))
-  #select(!Excess_Info)
-
-##Reformat Sample IDs
-#202607_MSM_UP_LYSA_10CM --> GCW_202605_UP_LYSA_10CM
-all_data_flagged <- all_data_flagged %>%
-  separate(
-    col = sample_ID,
-    sep = "_",
-    into = c("Date", "Site_Code", "Zone", "LysID", "Depth"),
-    remove = FALSE) %>% 
-  mutate(sample_ID = paste(Site_Code, Date, Zone, LysID, Depth, sep = "_")) %>% 
-  mutate(sample_ID = gsub("_NA", "", sample_ID))
-
+  filter(!str_detect(sample_ID, "spk")) 
 
 #check to see if all samples are present in the metadata 
 all_data_flagged$sample_ID <- toupper(all_data_flagged$sample_ID)
-dionex_metadata$Cl_SO4_ID <- toupper(dionex_metadata$Cl_SO4_ID)
+metadata$Cl_SO4_ID <- toupper(metadata$Cl_SO4_ID)
 
-all_present <- all(all_data_flagged$sample_ID %in% dionex_metadata$Cl_SO4_ID)
+all_present <- all(all_data_flagged$sample_ID %in% metadata$Cl_SO4_ID)
 
 if (all_present) {
   message("All sample IDs are present in metadata.")
@@ -1019,93 +1023,26 @@ if (all_present) {
   message("Some sample IDs are missing from metadata.")
   
   # Optional: Which ones are missing?
-  missing_ids <- setdiff(all_data_flagged$sample_ID, dionex_metadata$Cl_SO4_ID)
+  missing_ids <- setdiff(all_data_flagged$sample_ID, metadata$Cl_SO4_ID)
   print(missing_ids)
 }
 
-dionex_metadata_selected <- dionex_metadata %>%
-  select(Cl_SO4_ID, Year, Month, Day, Depth_cm, Lysimeter, Time..24hr., Time.Zone_EDT.EST,  Field.Notes) 
-
 #merge metadata with sample run data 
 merged_data <- all_data_flagged %>%
-  left_join(dionex_metadata_selected, by = c("sample_ID" = "Cl_SO4_ID"))
-
-df_all_clean <- merged_data %>%
-  #filter(str_detect(Sample_Name, "GCW|GWI|MSM|SWH")) %>%
-  #mutate(Run_Time = lubridate::mdy_hm(Run_Time)) %>%
-  separate(
-    col = sample_name,
-    sep = "_",
-    into = c("Sample_Number", "Site_Code", "Date" ,"Zone", "LysID", "Depth"),
-    remove = FALSE)
-
-############### THIS IS ONLY FOR 2023 when SWAMP was called UP and UPLAND was called UPCON ##############
-df_all_clean <- df_all_clean %>%
-  mutate(
-    Zone = case_when(
-      Site_Code == "SWH" & Zone == "UP" ~ "SWAMP",
-      Site_Code == "SWH" & Zone == "UPCON" ~ "UP",
-      TRUE ~ `Zone`
-    ))
-
+  left_join(metadata, by = c("sample_ID" = "Cl_SO4_ID"))
 
 ```
 
-## Visualize Data by Plot   
-```{r Visualize Data, echo=FALSE, warning=FALSE}
+## Visualize Data by Plot - Pulls in viz_data code chunk from project-specific RMD
+```{r viz_data_output, echo=TRUE, eval=TRUE}
+code <- knitr::knit_code$get("viz_data")
+eval(parse(text = code))
+```
 
-#Plot samples to get a first look at concentrations (sanity check)
-data_plotting <- df_all_clean
-
-#Remove Lucie's test samples
-data_plotting <- data_plotting %>%  
-  filter(!str_detect(sample_name, "Lucie")) 
-
-#Order by Zone from Upland to Surface Water
-data_plotting$Zone = factor(data_plotting$Zone, levels = c("UP",  "SWAMP", "TR", "WC", "SW"))
-data_plotting <- data_plotting[order(data_plotting$Zone), ]
-
-#group the data for plotting
-data_plotting <- data_plotting %>%
-  group_by(Site_Code) %>%
-  mutate(row_num = factor(row_number())) %>%  # create row_num as factor per group
-  ungroup()
-
-#Plot data and change colors based on Zone:
-viz_cl_plot <- ggplot(data_plotting, aes(x = row_num, y = Cl_ppm, fill = Zone)) +
-  geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) +
-  facet_grid(~ Site_Code, scales="free_x") +
-  scale_fill_manual(values = c(
-    "UP" = "#20063B",
-    "SWAMP" = "darkgrey",
-    "TR" = "#FFBC42",
-    "WC" = "#419973",
-    "SW" = "#25ABE6"
-  )) +
-  theme_classic() +
-  theme(axis.text.x = element_blank()) +
-  labs(x = " ", y = "Cl (mg/L)", title = "Samples: Chloride") +
-  scale_x_discrete(drop = TRUE)
-
-
-viz_so4_plot <-  ggplot(data_plotting, aes(x = row_num, y = SO4_ppm, fill = Zone)) +
-  geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) +
-  facet_grid(~ Site_Code, scales="free_x") +
-  scale_fill_manual(values = c(
-    "UP" = "#20063B",
-    "SWAMP" = "darkgrey",
-    "TR" = "#FFBC42",
-    "WC" = "#419973",
-    "SW" = "#25ABE6"
-  )) +
-  theme_classic() +
-  theme(axis.text.x = element_blank()) +
-  labs(x = " ", y = "SO4 (mg/L)", title = "Samples: SO4") +
-  scale_x_discrete(drop = TRUE)
-
-ggarrange(viz_cl_plot, viz_so4_plot, nrow=2, ncol=1)
-
-
+## Clean Data - Pulls in clean_data code chunk from project-specific RMD
+```{r clean_data_output, echo=TRUE, eval=TRUE}
+code <- knitr::knit_code$get("clean_data")
+eval(parse(text = code))
 ```
 
 ## Export Processed Data  
@@ -1115,34 +1052,13 @@ ggarrange(viz_cl_plot, viz_so4_plot, nrow=2, ncol=1)
 #Add any necessary identifiers to the samples  ### VERY IMPORTANT AND STANDARD FOR PROJECT ####
   #example read in sample IDs list and merge 
   #create required ID columns in R, etc. 
-final_data <- df_all_clean %>% 
-  filter(str_detect(sample_name, "GCW|GWI|MSM|SWH")) %>%
+final_data <- merged_data %>% 
   mutate(
-    Project = "COMPASS: Synoptic",   # new column with same value on every row
-    Region = "CB",
+    Project = Project,   # new column with same value on every row
     Run_notes = run_notes,     # new column with notes about the run
-    Analysis_rundate = print(Date_Run)
-  ) 
+    Analysis_rundate = print(Date_Run)  ) 
 
 colnames(final_data)
-
-final_data <- final_data %>%
-  rename(
-    Time = Time..24hr.,
-    Time_Zone = Time.Zone_EDT.EST,
-    Replicate = Lysimeter,
-    Sample_ID = sample_ID,
-    Field_notes = Field.Notes,
-    Site = Site_Code
-    # add more rename pairs as needed
-  ) %>%
-  select(
-    Project, Region, Site, Zone, Replicate, Depth_cm, 
-         Sample_ID, Year, Month, Day, Time, Time_Zone,
-         SO4_ppm, SO4_Conc_mM, SO4_Conc_flag, SO4_QAQC_flag, Cl_ppm, Cl_Conc_mM, Cl_Conc_flag, Cl_QAQC_flag, salinity,
-         Analysis_rundate,  Run_notes, Field_notes
-        # list columns in the order you want them
-  )
 
 ##Change any SO4/Cl conc's of NA to 0 
 final_data$SO4_Conc_mM[is.na(final_data$SO4_Conc_mM)] <- 0
@@ -1154,12 +1070,9 @@ final_data$salinity <- ifelse(final_data$Cl_ppm == 0, 2.6e-05, final_data$salini
 
 head(final_data)
 
-#will put final data in processed data folder 
 #Write out data frame 
-  write.csv(final_data, processed_file_name)
+write.csv(final_data, processed_file_name)
   
-  
-
 #write out the log file with the added lines for this run  
 write.csv(log, Log_path)
 
