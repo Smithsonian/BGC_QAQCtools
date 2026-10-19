@@ -61,17 +61,8 @@ lapply(c(
   IDs_to_change <- data.frame(sample_ID, New_IDs)
 
 ##### Project-specific R Scripts ####
-viz_script <- "GCReW_CO2xN_metadata_and_viz.Rmd"
+  viz_script <- "GCReW_CO2xN_metadata_and_viz.Rmd"
 
-external_code <- knitr::purl(
-  viz_script,
-  output = tempfile(fileext = ".R"),
-  documentation = 2
-)
-
-knitr::read_chunk(external_code)
-
-   
 ###### File Names - PLEASE CHANGE 
 #file path and name for raw summary data file 
   raw_file_name_cl = "Raw Data/CO2xN_202605_Cl.txt"
@@ -131,8 +122,14 @@ knitr::read_chunk(external_code)
 metadata <- read.csv(Metadata)
 ```
 
-```{r clean_metadata_output, echo=FALSE, warning = FALSE}
+```{r clean_metadata_output, echo=FALSE, warning = FALSE, include = FALSE}
 ##Pulls in Project-Specific Metadata cleaning chunk
+external_code <- knitr::purl(
+  viz_script,
+  output = tempfile(fileext = ".R"),
+  documentation = 2)
+knitr::read_chunk(external_code)
+
 code <- knitr::knit_code$get("clean_metadata")
 eval(parse(text = code))
 ```
