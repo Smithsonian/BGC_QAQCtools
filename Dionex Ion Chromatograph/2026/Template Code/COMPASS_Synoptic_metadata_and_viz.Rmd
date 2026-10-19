@@ -1,6 +1,6 @@
 
 ##Read in metadata and create similar sample IDs for matching to samples 
-```{r clean_metadata}
+```{r clean_metadata, echo = FALSE}
 
 #make a new columns in the metadata with important info:
 metadata <- metadata %>%
@@ -50,6 +50,23 @@ metadata <- metadata %>%
 
 ```
 
+## Clean data for metadata matching
+```{r data_for_matching, echo = FALSE}
+#remove duplicates from the sample dataframe bc we are just taking the first dup run
+dat_flagged <- dat_flagged %>%
+  mutate(sample_ID = sub("^[^_]+_", "", sample_ID)) 
+
+##Reformat Sample IDs
+#202607_MSM_UP_LYSA_10CM --> GCW_202605_UP_LYSA_10CM
+dat_flagged <- dat_flagged %>%
+  separate(
+    col = sample_ID,
+    sep = "_",
+    into = c("Date", "Site_Code", "Zone", "LysID", "Depth"),
+    remove = FALSE) %>% 
+  mutate(sample_ID = paste(Site_Code, Date, Zone, LysID, Depth, sep = "_")) %>% 
+  mutate(sample_ID = gsub("_NA", "", sample_ID))
+```
 
 ## Visualize Data by Plot   
 ```{r viz_data}
@@ -118,7 +135,7 @@ ggarrange(viz_cl_plot, viz_so4_plot, nrow=2, ncol=1)
 
 ```
 
-## Export Processed Data  
+## Clean Data  
 ```{r clean_data, echo=FALSE, include = FALSE}
 
 #Prepare data to be exported - if there is anything else to add 

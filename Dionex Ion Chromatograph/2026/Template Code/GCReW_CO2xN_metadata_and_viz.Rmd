@@ -1,0 +1,340 @@
+
+##Read in metadata and create similar sample IDs for matching to samples 
+```{r clean_metadata}
+
+#clean up columns in metadata file:
+  #Pull out only SMARTX Rows 
+  #Create a Sample_Name column to match the SEAL
+metadata <- metadata %>%
+  filter(grepl(Project_name, Project, ignore.case = TRUE)) %>%
+  mutate(Sample.ID = gsub("-", "_", Sample.ID)) %>% 
+  mutate(Cl_SO4_ID = paste0(Sample.ID, "_", sample_month, "_", sample_year)) %>%
+  mutate(Month = sample_month) %>%
+  mutate(Year = sample_year) 
+
+#create a column for C3 or C4 plants 
+#metadata <- metadata %>%
+#  mutate(
+#    Nickname = case_when(
+#      startsWith(as.character(Plot), "3") ~ "C3",
+#      startsWith(as.character(Plot), "6") ~ "C3",
+#      startsWith(as.character(Plot), "4") ~ "C4",
+#      TRUE ~ NA_character_  # if other values exist
+ #   )
+#  )
+
+#create a column for dominant plant communities  
+#metadata <- metadata %>%
+#  mutate(
+ #   Community = case_when(
+ #     startsWith(as.character(Plot), "3") ~ "SCAM",
+  #    startsWith(as.character(Plot), "6") ~ "SCAM",
+#      startsWith(as.character(Plot), "4") ~ "SPPA, DISP",
+  #    TRUE ~ NA_character_  # if other values exist
+ #   )
+ # )
+
+```
+
+## Clean data for metadata matching
+```{r data_for_matching}
+
+##Reformat Sample IDs
+dat_flagged <- dat_flagged %>%
+  mutate(sample_ID = paste0(sample_ID, "_", sample_month, "_", sample_year)) %>% 
+  select(-c(Site, Plot, Project))
+
+```
+
+## Visualize Data by Plot   
+```{r viz_data}
+
+SO4_forplot <- merged_data
+
+#ensure points are in correct order
+
+SO4_forplot <- SO4_forplot[order(SO4_forplot$Depth_cm), ]
+
+color1 <- c("L1", "L2", "L3", "L4")
+color2 <- c("L5", "L6", "L8", "L10")
+color3 <- c("L7", "L9", "L11", "L12")
+color4 <- c("L13", "L14", "L16", "L15")
+color5 <- c("L17", "L18", "L19", "L20")
+
+SO4_forplot <- SO4_forplot %>%
+  mutate(
+    Plot_Color = case_when(
+      Plot %in% color1 ~ "Color1",
+      Plot %in% color2 ~ "Color2",
+      Plot %in% color3 ~ "Color3",
+      Plot %in% color4 ~ "Color4",
+      Plot %in% color5 ~ "Color5"
+    )
+  ) %>%
+  mutate(Treatment = ifelse(
+    CO2_Treatment == "Elevated" &
+      N_Treatment == "Amended",
+    "eCO2 & eN",
+    ifelse(
+      CO2_Treatment == "Elevated" &
+        N_Treatment == "Ambient",
+      "eCO2 & aN",
+      ifelse(
+        CO2_Treatment == "Ambient" &
+          N_Treatment == "Amended"  ,
+        "aCO2 & eN" ,
+        "aCO2 & aN"
+      )
+    )
+  ))  %>%
+  mutate(CO2_Treatment = ifelse(CO2_Treatment == "Ambient", "aCO2", "eCO2"))  %>%
+  mutate(N_Treatment = ifelse(N_Treatment == "Ambient", "aN", "eN")) 
+#need to work out how best to plot these data
+
+viz_SO4_plot2 <- ggplot(data = SO4_forplot, aes(
+  x = factor(as.factor(CO2_Treatment), levels = c("eCO2", "aCO2")),
+  y = SO4_Conc_mM,
+  fill = as.factor(Treatment),
+  color = as.factor(Treatment)
+)) +
+  geom_bar(
+    stat = "identity",
+    position = position_dodge2(padding = 0.25,preserve = "single")
+  ) +
+  facet_grid(Depth_cm ~ N_Treatment, scales = "fixed") +
+  scale_fill_manual(values = c(
+    "eCO2 & eN" = "#DB5461",
+    "eCO2 & aN" = "#454ADE", 
+    "aCO2 & eN" = "white",
+    "aCO2 & aN" = "white"
+  ),
+    name = "Treatment:",
+    breaks = c("eCO2 & eN", "eCO2 & aN", "aCO2 & aN", "aCO2 & eN"),
+    labels = c("eCO2 & eN", "eCO2 & aN", "aCO2 & aN", "aCO2 & eN")
+    
+  ) +
+  scale_color_manual(values = c(
+    "eCO2 & eN" = "#DB5461",
+    "eCO2 & aN" = "#454ADE", 
+    "aCO2 & eN" = "#DB5461",
+    "aCO2 & aN" = "#454ADE"
+  ),
+    name = "Treatment:",
+    breaks = c("eCO2 & eN", "eCO2 & aN", "aCO2 & aN", "aCO2 & eN"),
+    labels = c("eCO2 & eN", "eCO2 & aN", "aCO2 & aN", "aCO2 & eN")
+  ) +
+  theme_classic() +
+  labs(x = " ",
+       y = "SO4 (uM)",
+       title = "CO2xN: Porewater SO4"
+       ) +
+  theme(legend.position = "right") +
+  scale_x_discrete(drop = TRUE) +
+  theme(
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    panel.border = element_rect(
+      color = "black",
+      fill = NA,
+      linewidth = 0.8
+    )
+  ) +
+coord_flip()
+print(viz_SO4_plot2)
+
+
+#ensure points are in correct order
+
+#make plot
+viz_SO4_plot_2 <- ggplot(data = SO4_forplot, aes(x = SO4_Conc_mM, y = as.numeric(Depth_cm), color = Plot_Color)) +
+  geom_point(size = 3) +
+  geom_path(linewidth = 1) +
+  scale_color_manual(
+    values = c(
+      "Color1" = "#FFD500",
+      "Color2" = "#00D0FF",
+      "Color3" = "#FF0075",
+      "Color4" = "#80d280",
+      "Color5" = "#ff6040"
+    ),
+    labels = c("1", "2", "3", "4", "5")
+  ) +
+  facet_grid(Treatment ~ ., scales = "fixed") +
+  labs(
+    x = "SO4 (mM)",
+    y = "Depth (cm)",
+    title = "CO2xN: Porewater SO4 by Replicate",
+    color = "Replicate"
+  ) +
+  scale_y_reverse(breaks = c(20, 40, 80), limits = c(90, 10)) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    panel.border = element_rect(
+      color = "black",
+      fill = NA,
+      linewidth = 0.8
+    )
+  )
+
+viz_SO4_plot_2
+
+
+## Visualize Data Cl
+Cl_forplot <- merged_data
+
+#ensure points are in correct order
+
+Cl_forplot <- Cl_forplot[order(Cl_forplot$Depth_cm), ]
+
+color1 <- c("L1", "L2", "L3", "L4")
+color2 <- c("L5", "L6", "L8", "L10")
+color3 <- c("L7", "L9", "L11", "L12")
+color4 <- c("L13", "L14", "L16", "L15")
+color5 <- c("L17", "L18", "L19", "L20")
+
+Cl_forplot <- Cl_forplot %>%
+  mutate(
+    Plot_Color = case_when(
+      Plot %in% color1 ~ "Color1",
+      Plot %in% color2 ~ "Color2",
+      Plot %in% color3 ~ "Color3",
+      Plot %in% color4 ~ "Color4",
+      Plot %in% color5 ~ "Color5"
+    )
+  ) %>%
+  mutate(Treatment = ifelse(
+    CO2_Treatment == "Elevated" &
+      N_Treatment == "Amended",
+    "eCO2 & eN",
+    ifelse(
+      CO2_Treatment == "Elevated" &
+        N_Treatment == "Ambient",
+      "eCO2 & aN",
+      ifelse(
+        CO2_Treatment == "Ambient" &
+          N_Treatment == "Amended"  ,
+        "aCO2 & eN" ,
+        "aCO2 & aN"
+      )
+    )
+  ))  %>%
+  mutate(CO2_Treatment = ifelse(CO2_Treatment == "Ambient", "aCO2", "eCO2"))  %>%
+  mutate(N_Treatment = ifelse(N_Treatment == "Ambient", "aN", "eN")) 
+#need to work out how best to plot these data
+
+viz_Cl_plot2 <- ggplot(data = Cl_forplot, aes(
+  x = factor(as.factor(CO2_Treatment), levels = c("eCO2", "aCO2")),
+  y = Cl_Conc_mM,
+  fill = as.factor(Treatment),
+  color = as.factor(Treatment)
+)) +
+  geom_bar(
+    stat = "identity",
+    position = position_dodge2(padding = 0.25,preserve = "single")
+  ) +
+  facet_grid(Depth_cm ~ N_Treatment, scales = "fixed") +
+  scale_fill_manual(values = c(
+    "eCO2 & eN" = "#DB5461",
+    "eCO2 & aN" = "#454ADE", 
+    "aCO2 & eN" = "white",
+    "aCO2 & aN" = "white"
+  ),
+    name = "Treatment:",
+    breaks = c("eCO2 & eN", "eCO2 & aN", "aCO2 & aN", "aCO2 & eN"),
+    labels = c("eCO2 & eN", "eCO2 & aN", "aCO2 & aN", "aCO2 & eN")
+    
+  ) +
+  scale_color_manual(values = c(
+    "eCO2 & eN" = "#DB5461",
+    "eCO2 & aN" = "#454ADE", 
+    "aCO2 & eN" = "#DB5461",
+    "aCO2 & aN" = "#454ADE"
+  ),
+    name = "Treatment:",
+    breaks = c("eCO2 & eN", "eCO2 & aN", "aCO2 & aN", "aCO2 & eN"),
+    labels = c("eCO2 & eN", "eCO2 & aN", "aCO2 & aN", "aCO2 & eN")
+  ) +
+  theme_classic() +
+  labs(x = " ",
+       y = "Cl (mM)",
+       title = "CO2xN: Porewater Cl"
+       ) +
+  theme(legend.position = "right") +
+  scale_x_discrete(drop = TRUE) +
+  theme(
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    panel.border = element_rect(
+      color = "black",
+      fill = NA,
+      linewidth = 0.8
+    )
+  ) +
+coord_flip()
+print(viz_Cl_plot2)
+
+
+#ensure points are in correct order
+
+#make plot
+viz_Cl_plot_2 <- ggplot(data = Cl_forplot, aes(x = Cl_Conc_mM, y = as.numeric(Depth_cm), color = Plot_Color)) +
+  geom_point(size = 3) +
+  geom_path(linewidth = 1) +
+  scale_color_manual(
+    values = c(
+      "Color1" = "#FFD500",
+      "Color2" = "#00D0FF",
+      "Color3" = "#FF0075",
+      "Color4" = "#80d280",
+      "Color5" = "#ff6040"
+    ),
+    labels = c("1", "2", "3", "4", "5")
+  ) +
+  facet_grid(Treatment ~ ., scales = "fixed") +
+  labs(
+    x = "Cl (mM)",
+    y = "Depth (cm)",
+    title = "CO2xN: Porewater Cl by Replicate",
+    color = "Replicate"
+  ) +
+  scale_y_reverse(breaks = c(20, 40, 80), limits = c(90, 10)) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    panel.border = element_rect(
+      color = "black",
+      fill = NA,
+      linewidth = 0.8
+    )
+  )
+
+viz_Cl_plot_2
+```
+
+## Clean Data  
+```{r clean_data}
+
+#Prepare data to be exported - if there is anything else to add 
+#Add any necessary identifiers to the samples  ### VERY IMPORTANT AND STANDARD FOR PROJECT ####
+  #example read in sample IDs list and merge 
+  #create required ID columns in R, etc. 
+merged_data <- merged_data %>% 
+  mutate(
+    Site = Site, 
+    Run_notes = run_notes,     # new column with notes about the run
+    Analysis_rundate = Date_Run
+  ) 
+
+
+merged_data <- merged_data %>%
+  select(
+         Site, Project, Year, Month, 
+         Community, Nickname, Plot, Depth_cm, CO2_Treatment, N_Treatment, 
+         SO4_Conc_mM, SO4_ppm, SO4_Conc_flag, SO4_QAQC_flag, Cl_Conc_mM, Cl_ppm, Cl_Conc_flag, Cl_QAQC_flag, salinity,
+         Analysis_rundate,  Run_notes
+        # list columns in the order you want them
+  )
+
+
+```
+
+#end
