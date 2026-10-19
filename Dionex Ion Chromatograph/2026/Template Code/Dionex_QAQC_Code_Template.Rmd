@@ -12,8 +12,8 @@ output_dir: "To Be Reviewed/PDF"
 
 \newpage
 
+```{r packages, include=FALSE, warning = FALSE}
 ##Add Required Packages
-```{r packages, include=FALSE}
 
 #Packages that are required 
 lapply(c(
@@ -27,21 +27,23 @@ lapply(c(
 
 ```
 
-
-## Run Information - EDIT EACH RUN
-```{r Run Information, echo=TRUE, message=FALSE, warning=FALSE}
+```{r Run Information, echo=TRUE, message=FALSE, warning=FALSE, include = FALSE}
+##Run Information - EDIT EACH RUN
 
 ###### Run information - PLEASE CHANGE
   Date_Run = as.Date("2026-07-30")  #Date that instrument was run
   Run_by = "Zoe Read"  #Instrument user 
   Script_run_by = "Zoe Read" #Code user 
-  run_notes = "" #any notes from the run
+  run_notes = "Run notes" #any notes from the run
   
-  Project_name <- "COMPASS:Synoptic" #LTREB/SMARTX/GENX/COMPASS:TEMPEST
-  Site <- c("GCW", "GWI", "MSM", "SWH") #whatever identifies your samples within the same names (TMP, FATE); Use "GCW" for LTREB site
+  sample_month = "May"
+  sample_year = "2026"
+  
+  Project_name <- "CO2xN" #CO2xN/SMARTX/GENX/COMPASS:TEMPEST/COMPASS:Synoptic/CO2xNxPhrag/CO2xCOMM/GENX
+  Site <- c("GCW") #whatever identifies your samples within the same names (TMP, FATE, "GWI", "MSM", "SWH"); Use "GCW" for LTREB site
   Site_pattern <- paste(Site, collapse = "|") 
   
-  Plot <- c("UP", "TR", "SWAMP", "WC", "SW") ##Use "ALL" for LTREB sample plots
+  Plot <- c("ALL") ##Use "ALL" for LTREB sample plots (COMPASS: "UP", "TR", "SWAMP", "WC", "SW")
   Plot_pattern <- paste(Plot, collapse = "|") 
 
   #Set time zone 
@@ -59,16 +61,7 @@ lapply(c(
   IDs_to_change <- data.frame(sample_ID, New_IDs)
 
 ##### Project-specific R Scripts ####
-viz_script <- switch(
-  Project_name,
-  "COMPASS:TEMPEST" = "COMPASS_TEMPEST_viz.R",
-  "COMPASS:Synoptic" = "COMPASS_Synoptic_metadata_and_viz.Rmd",
-  "LTREB" = "LTREB_viz.R", 
-  "SMARTX" = "SMARTX_viz.R", 
-  "GENX" = "GENX_viz.R", 
-  "FATE" = "FATE_viz.R", 
-)
-  
+viz_script <- "GCReW_CO2xN_metadata_and_viz.Rmd"
 
 external_code <- knitr::purl(
   viz_script,
@@ -81,23 +74,23 @@ knitr::read_chunk(external_code)
    
 ###### File Names - PLEASE CHANGE 
 #file path and name for raw summary data file 
-  raw_file_name_cl = "Raw Data/COMPASS_Synoptic_CB_MonMon_202607_MSM_GWI_Cl.txt"
-  raw_file_name_so4 = "Raw Data/COMPASS_Synoptic_CB_MonMon_202607_MSM_GWI_SO4.txt"
+  raw_file_name_cl = "Raw Data/CO2xN_202605_Cl.txt"
+  raw_file_name_so4 = "Raw Data/CO2xN_202605_SO4.txt"
 
 #file path and name of processed data file 
-  processed_file_name = "Processed Data/COMPASS_SynopticCB_PW_Processed_Cl_SO4_MSM_GWI_202607.csv" 
+  processed_file_name = "Processed Data/COMPASS_SynopticCB_PW_Processed_Cl_SO4_CO2xN_202605.csv" 
   
 ###### Log Files - PLEASE CHECK 
 #downloaded metadata csv - downloaded from Google drive as csv for this year
-  Metadata = "Raw Data/COMPASS_SynopticCB_PW_SampleLog_2026.csv"
+  Metadata = "Raw Data/GCReW_Project_Treatment_Metadata.csv"
   
 #qaqc log file path for this year 
-  Log_path = "Raw Data/COMPASS_Synoptic_Cl_SO4_QAQClog_2026.csv"
+  Log_path = "Raw Data/Cl_SO4_QAQClog_2026.csv"
 
 ```
 
+```{r Constants and QAQC cutoffs, include=FALSE, warning = FALSE}
 ##Set Up Code - constants and QAQC cutoffs
-```{r Constants and QAQC cutoffs, include=FALSE}
 
 #Coefficients / constants that are needed for calculations 
   cl_mw <- 35.45     #molecular weight of Chloride, g/mol
@@ -133,13 +126,13 @@ knitr::read_chunk(external_code)
    
 ```
 
+```{r pull in metadata for later, include=FALSE, echo = FALSE, warning = FALSE}
 ##Read in metadata
-```{r pull in metadata for later, include=FALSE}
 metadata <- read.csv(Metadata)
 ```
 
+```{r clean_metadata_output, echo=FALSE, warning = FALSE}
 ##Pulls in Project-Specific Metadata cleaning chunk
-```{r clean_metadata_output, echo=TRUE}
 code <- knitr::knit_code$get("clean_metadata")
 eval(parse(text = code))
 ```
@@ -156,8 +149,8 @@ eval(parse(text = code))
 **Cl file used:**
 - `r basename(raw_file_name_cl)`
 
+```{r import data, include=FALSE, warning = FALSE}
 ##Import Sample Data 
-```{r import data, include=FALSE}
 
 ## Read in raw data file from Dionex - copied and saved as a txt
 #Sulfate
@@ -220,8 +213,9 @@ head(all_dat)
 
 ```
 
+
+```{r fix sample IDs, include = FALSE, warning = FALSE}
 ##Fix samples entered incorrectly
-```{r fix sample IDs, include = FALSE}
 
 all_dat <- all_dat %>%
   
@@ -234,7 +228,6 @@ all_dat <- all_dat %>%
   select(-New_IDs)
 
 ```
-
 
 ## Assess Standard Curves
 ```{r Assess Standards, echo=FALSE, message=FALSE, warning = FALSE, fig.height = 4}
@@ -314,7 +307,7 @@ Cl_stds_plot <- ggplot(stds, aes(x = Cl_ppm, y = Cl_area)) +
   facet_wrap(~ run_date) +
   geom_text(
     data = r2_labels_cl,
-    aes(x = x_pos, y = y_pos, label = paste0("R² = ", r_squared)),
+    aes(x = x_pos, y = y_pos, label = paste0("R2 = ", r_squared)),
     inherit.aes = FALSE,
     hjust = 1, vjust = 1,
     size = 4
@@ -335,7 +328,7 @@ SO4_stds_plot <- ggplot(stds, aes(x = SO4_ppm, y = SO4_area)) +
   facet_wrap(~ run_date) +
     geom_text(
     data = r2_labels_so4,
-    aes(x = x_pos, y = y_pos, label = paste0("R² = ", r_squared)),
+    aes(x = x_pos, y = y_pos, label = paste0("R2 = ", r_squared)),
     inherit.aes = FALSE,
     hjust = 1, vjust = 1,
     size = 4
@@ -568,7 +561,7 @@ if (so4_chks_percent <= chks_flag) {
 ```
 
 ## Assess Blanks 
-```{r Check Blanks, echo=FALSE}
+```{r Check Blanks, echo=FALSE, warning = FALSE}
 
 #Pull out the blanks from raw file 
 blks_raw <- all_dat %>%
@@ -643,21 +636,23 @@ if (so4_blks_percent <= chks_flag) {
 ```
 
 ## Assess Duplicates 
-```{r Check Duplicates, echo=FALSE}
+```{r Check Duplicates, echo=FALSE, warning = FALSE}
+
+all_dat$sample_ID <- toupper(all_dat$sample_ID)
 
 #pull out any rows that have "dup" in the sample_name column
 dups <- all_dat %>%  
   select(!c(sample_name, sample_type, SO4_area, Cl_area, Cl_QAQC_flag, SO4_QAQC_flag)) %>%
-  filter(str_detect(sample_ID, "dup"))      #have to change this to match data
+  filter(str_detect(sample_ID, "DUP"))      
 
 #create a new dataframe and remove dups from sample dataframe 
 dat_raw2 <- all_dat %>%  
-  filter(!str_detect(sample_ID, "dup")) %>%  
+  filter(!str_detect(sample_ID, "DUP")) %>%  
   select(!c(sample_name, sample_type, SO4_area, Cl_area, Cl_QAQC_flag, SO4_QAQC_flag))
 
 #remove the dup from these IDs so we will have duplicate sample names
 dups <- dups %>%
-  mutate(sample_ID = gsub("_dup", "", as.character(sample_ID))) %>%
+  mutate(sample_ID = gsub("_DUP", "", as.character(sample_ID))) %>%
   rename(
     sample_ID = sample_ID,
     SO4_ppm_dup = SO4_ppm, 
@@ -811,7 +806,7 @@ if (so4_dups_diff_percent <= chks_flag) {
 ```
 
 ## Calculate mmol/L concentrations & salinity, add dilutions
-```{r Unit Conversion and Salinity Calculation, results = 'hide'}
+```{r Unit Conversion and Salinity Calculation, results = 'hide', include=FALSE, warning = FALSE}
 
 # Convert ppm to mmol/L
 all_dat$SO4_Conc_mM <- (all_dat$SO4_ppm / s_mw)
@@ -832,32 +827,31 @@ dilutions <- dilutions %>%
 
 ##Add dilutions to dataframe
 all_dat_dil <- all_dat %>%
-  filter(sample_ID != "Lab Blank") %>% 
-  filter(!str_detect(sample_ID, "Standard")) %>% 
+  filter(sample_ID != "LAB BLANK") %>% 
+  filter(!str_detect(sample_ID, "STANDARD")) %>% 
   mutate(Site = ifelse(str_detect(sample_ID, Site_pattern), str_extract(sample_ID, Site_pattern), Site_pattern)) %>% 
   mutate(Plot = ifelse(str_detect(sample_ID, Plot_pattern), str_extract(sample_ID, Plot_pattern), Plot_pattern)) %>% 
   left_join(dilutions, by = c("Site", "Plot"))
 
-
 ```
 
 ## Assess Analytical Spikes
-```{r Assess Spikes, echo=FALSE}
+```{r Assess Spikes, echo=FALSE, warning = FALSE}
 
 #pull out any rows that have "spk" in the Sample ID column
 spks <- all_dat_dil %>%  
   select(!c(sample_name, sample_type, SO4_area, Cl_ppm, Cl_Conc_mM, Cl_area, Cl_QAQC_flag, SO4_QAQC_flag, salinity)) %>%
-  filter(str_detect(sample_ID, "spk"))      #have to change this to match data
+  filter(str_detect(sample_ID, "SPK"))      #have to change this to match data
 # head(spks)
 
 #create a new dataframe and remove dups from sample dataframe 
 dat_spks <- all_dat_dil %>%  
-  filter(!str_detect(sample_ID, "spk")) %>%  
+  filter(!str_detect(sample_ID, "SPK")) %>%  
   select(!c(sample_name, sample_type, SO4_area, Cl_ppm,  Cl_Conc_mM, Cl_area, Cl_QAQC_flag, SO4_QAQC_flag, salinity, Dilution, SampleVol, Site, Plot, Project))
 
 #remove the dup from these IDs so we will have duplicate sample names
 spks <- spks %>%
-  mutate(sample_ID = gsub("_spk", "", as.character(sample_ID))) %>%
+  mutate(sample_ID = gsub("_SPK", "", as.character(sample_ID))) %>%
   rename(
     sample_ID = sample_ID,
     SO4_Conc_mM_spk = SO4_Conc_mM, 
@@ -934,10 +928,8 @@ if (Perc_spks$Percent <= chks_flag) {
 ```
 
 
-## Check if samples within the range of the standard curve
-```{r Sample Flagging, echo=FALSE}
-
-cat("Sample Flagging")
+## Check if samples are within the range of the standard curve
+```{r Sample Flagging, echo=FALSE, warning = FALSE}
 
 #Dilute samples 
 all_dat_dil$Cl_ppm_dil <- all_dat_dil$Cl_ppm/all_dat_dil$Dilution
@@ -1002,14 +994,20 @@ knitr::kable(Perc_Cl_flagged, caption = "Cl samples")
 
 ```
 
+```{r data_for_matching_output, echo=FALSE, eval=TRUE, warning = FALSE}
+##Clean Data for metadata matching - Pulls in data_for_matching code chunk from project-specific RMD
+code <- knitr::knit_code$get("data_for_matching")
+eval(parse(text = code))
+```
+
 ## Check to see if samples run match metadata & merge info
 ```{r check sample ids with metadata, echo=FALSE, warning = FALSE}
 
 #remove checks from the sample dataframe
 all_data_flagged <- dat_flagged %>%
-  filter(!str_detect(sample_ID, "dup")) %>%
-  filter(!str_detect(sample_ID, "Lab Blank")) %>%
-  filter(!str_detect(sample_ID, "spk")) 
+  filter(!str_detect(sample_ID, "DUP")) %>%
+  filter(!str_detect(sample_ID, "LAB BLANK")) %>%
+  filter(!str_detect(sample_ID, "SPK")) 
 
 #check to see if all samples are present in the metadata 
 all_data_flagged$sample_ID <- toupper(all_data_flagged$sample_ID)
@@ -1033,20 +1031,20 @@ merged_data <- all_data_flagged %>%
 
 ```
 
-## Visualize Data by Plot - Pulls in viz_data code chunk from project-specific RMD
-```{r viz_data_output, echo=TRUE, eval=TRUE}
+```{r viz_data_output, echo=FALSE, eval=TRUE, warning=FALSE}
+# Pull in external visualization code
 code <- knitr::knit_code$get("viz_data")
-eval(parse(text = code))
+eval(parse(text = code), envir = environment())
 ```
 
-## Clean Data - Pulls in clean_data code chunk from project-specific RMD
-```{r clean_data_output, echo=TRUE, eval=TRUE}
+```{r clean_data_output, echo=FALSE, eval=TRUE, warning = FALSE}
+##Clean Data - Pulls in clean_data code chunk from project-specific RMD
 code <- knitr::knit_code$get("clean_data")
 eval(parse(text = code))
 ```
 
-## Export Processed Data  
-```{r Export Processed Data, echo=FALSE, include = FALSE}
+```{r Export Processed Data, echo=FALSE, include = FALSE, warning = FALSE}
+##Export Processed Data  
 
 #Prepare data to be exported - if there is anything else to add 
 #Add any necessary identifiers to the samples  ### VERY IMPORTANT AND STANDARD FOR PROJECT ####
@@ -1077,6 +1075,5 @@ write.csv(final_data, processed_file_name)
 write.csv(log, Log_path)
 
 ```
-
 
 #end
