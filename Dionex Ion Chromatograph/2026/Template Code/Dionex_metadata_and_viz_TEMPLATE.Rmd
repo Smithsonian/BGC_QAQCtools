@@ -1,0 +1,56 @@
+
+##Read in metadata and create similar sample IDs for matching to samples 
+```{r clean_metadata, echo = FALSE}
+
+#Create IDs from what was collected for comparison later
+metadata <- metadata %>%
+  mutate(Cl_SO4_ID = Sample_ID)
+
+```
+
+## Clean data for metadata matching
+```{r data_for_matching, echo = FALSE}
+##Add any code here for matching the sample data ID's to the metadata
+```
+
+## Visualize Data by Plot   
+```{r viz_data}
+
+#Plot samples to get a first look at concentrations (sanity check)
+data_plotting <- merged_data
+
+#group the data for plotting
+data_plotting <- data_plotting %>%
+  mutate(row_num = factor(row_number())) 
+
+#Plot data and change colors based on Zone:
+viz_cl_plot <- ggplot(data_plotting, aes(x = row_num, y = Cl_ppm)) +
+  geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) +
+  theme_classic() +
+  theme(axis.text.x = element_blank()) +
+  labs(x = " ", y = "Cl (mg/L)", title = "Samples: Chloride") +
+  scale_x_discrete(drop = TRUE)
+
+
+viz_so4_plot <-  ggplot(data_plotting, aes(x = row_num, y = SO4_ppm)) +
+  geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) +
+  theme_classic() +
+  theme(axis.text.x = element_blank()) +
+  labs(x = " ", y = "SO4 (mg/L)", title = "Samples: SO4") +
+  scale_x_discrete(drop = TRUE)
+
+ggarrange(viz_cl_plot, viz_so4_plot, nrow=2, ncol=1)
+
+```
+
+## Clean Data  
+```{r clean_data, echo=FALSE, include = FALSE}
+
+#Prepare data to be exported - if there is anything else to add 
+#Add any necessary identifiers to the samples  ### VERY IMPORTANT AND STANDARD FOR PROJECT ####
+  #example read in sample IDs list and merge 
+  #create required ID columns in R, etc. 
+
+```
+
+#End
