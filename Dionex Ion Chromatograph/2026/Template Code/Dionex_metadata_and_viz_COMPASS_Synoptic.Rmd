@@ -65,7 +65,8 @@ dat_flagged <- dat_flagged %>%
     into = c("Date", "Site_Code", "Zone", "LysID", "Depth"),
     remove = FALSE) %>% 
   mutate(sample_ID = paste(Site_Code, Date, Zone, LysID, Depth, sep = "_")) %>% 
-  mutate(sample_ID = gsub("_NA", "", sample_ID))
+  mutate(sample_ID = gsub("_NA", "", sample_ID)) %>% 
+  select(-c(Site_Code, Date, Zone, LysID, Depth, Site))
 ```
 
 ## Visualize Data by Plot   
@@ -145,22 +146,22 @@ ggarrange(viz_cl_plot, viz_so4_plot, nrow=2, ncol=1)
 
 merged_data <- merged_data %>%
   mutate(Region = "CB")
-  rename(
-    Time = Time..24hr.,
-    Time_Zone = Time.Zone_EDT.EST,
-    Replicate = Lysimeter,
-    Sample_ID = sample_ID,
-    Field_notes = Field.Notes,
-    Site = Site_Code
-    # add more rename pairs as needed
-  ) %>%
-  select(
-    Project, Region, Site, Zone, Replicate, Depth_cm,
-         Sample_ID, Year, Month, Day, Time, Time_Zone,
-         SO4_ppm, SO4_Conc_mM, SO4_Conc_flag, SO4_QAQC_flag, Cl_ppm, Cl_Conc_mM, Cl_Conc_flag, Cl_QAQC_flag, salinity,
-         Analysis_rundate,  Run_notes, Field_notes
-        # list columns in the order you want them
-  )
+  # rename(
+  #   Time = Time..24hr.),
+  #   Time_Zone = Time.Zone_EDT.EST,
+  #   Replicate = Lysimeter,
+  #   Sample_ID = sample_ID,
+  #   Field_notes = Field.Notes,
+  #   Site = Site_Code
+  #   # add more rename pairs as needed
+  # ) %>%
+  # select(
+  #   Project, Region, Site, Zone, Replicate, Depth_cm,
+  #        Sample_ID, Year, Month, Day, Time, Time_Zone,
+  #        SO4_ppm, SO4_Conc_mM, SO4_Conc_flag, SO4_QAQC_flag, Cl_ppm, Cl_Conc_mM, Cl_Conc_flag, Cl_QAQC_flag, salinity,
+  #        Analysis_rundate,  Run_notes, Field_notes
+  #       # list columns in the order you want them
+  # )
 
 ```
 
