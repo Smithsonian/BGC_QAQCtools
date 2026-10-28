@@ -176,7 +176,7 @@ viz_SO4_plot_2 <- ggplot(data = SO4_forplot, aes(x = SO4_Conc_mM, y = as.numeric
     )
   )
 
-viz_SO4_plot_2
+print(viz_SO4_plot_2)
 
 
 ## Visualize Data Cl
@@ -307,7 +307,7 @@ viz_Cl_plot_2 <- ggplot(data = Cl_forplot, aes(x = Cl_Conc_mM, y = as.numeric(De
     )
   )
 
-viz_Cl_plot_2
+print(viz_Cl_plot_2)
 ```
 
 ## Clean Data  

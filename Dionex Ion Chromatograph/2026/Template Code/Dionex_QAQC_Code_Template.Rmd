@@ -1,6 +1,6 @@
 ---
-title: "Project: Porewater SO4/Cl"
-author: "Month Year Samples"
+title: "COMPASS Synoptic: Porewater SO4/Cl"
+author: "July 2026 Samples"
 date: "`r Sys.Date()`"
 output: 
   pdf_document:
@@ -39,11 +39,11 @@ lapply(c(
   sample_month = "May"
   sample_year = "2026"
   
-  Project_name <- "CO2xN" #CO2xN/SMARTX/GENX/COMPASS:TEMPEST/COMPASS:Synoptic/CO2xNxPhrag/CO2xCOMM/GENX
-  Site <- c("GCW") #whatever identifies your samples within the same names (TMP, FATE, "GWI", "MSM", "SWH"); Use "GCW" for LTREB site
+  Project_name <- "COMPASS:Synoptic" #CO2xN/SMARTX/GENX/COMPASS:TEMPEST/COMPASS:Synoptic/CO2xNxPhrag/CO2xCOMM/GENX
+  Site <- c("GCW", "GWI", "MSM", "SWH") #whatever identifies your samples within the same names (TMP, FATE, "GWI", "MSM", "SWH"); Use "GCW" for LTREB site
   Site_pattern <- paste(Site, collapse = "|") 
   
-  Plot <- c("ALL") ##Use "ALL" for LTREB sample plots (COMPASS: "UP", "TR", "SWAMP", "WC", "SW")
+  Plot <- c("UP", "TR", "SWAMP", "WC", "SW") ##Use "ALL" for LTREB sample plots, for COMPASS: "UP", "TR", "SWAMP", "WC", "SW"
   Plot_pattern <- paste(Plot, collapse = "|") 
 
   #Set time zone 
@@ -61,19 +61,19 @@ lapply(c(
   IDs_to_change <- data.frame(sample_ID, New_IDs)
 
 ##### Project-specific R Scripts ####
-  viz_script <- "GCReW_CO2xN_metadata_and_viz.Rmd"
+  viz_script <- "Dionex_metadata_and_viz_COMPASS_Synoptic.Rmd"
 
 ###### File Names - PLEASE CHANGE 
 #file path and name for raw summary data file 
-  raw_file_name_cl = "Raw Data/CO2xN_202605_Cl.txt"
-  raw_file_name_so4 = "Raw Data/CO2xN_202605_SO4.txt"
+  raw_file_name_cl = "Raw Data/COMPASS_Synoptic_CB_MonMon_202607_MSM_GWI_Cl.txt"
+  raw_file_name_so4 = "Raw Data/COMPASS_Synoptic_CB_MonMon_202607_MSM_GWI_SO4.txt"
 
 #file path and name of processed data file 
-  processed_file_name = "Processed Data/COMPASS_SynopticCB_PW_Processed_Cl_SO4_CO2xN_202605.csv" 
+  processed_file_name = "Processed Data/COMPASS_SynopticCB_PW_Processed_Cl_SO4_202607.csv" 
   
 ###### Log Files - PLEASE CHECK 
 #downloaded metadata csv - downloaded from Google drive as csv for this year
-  Metadata = "Raw Data/GCReW_Project_Treatment_Metadata.csv"
+  Metadata = "Raw Data/COMPASS_SynopticCB_PW_SampleLog_2026.csv"
   
 #qaqc log file path for this year 
   Log_path = "Raw Data/Cl_SO4_QAQClog_2026.csv"
