@@ -146,6 +146,9 @@ eval(parse(text = code))
 **Cl file used:**
 - `r basename(raw_file_name_cl)`
 
+**Changed sample names:** `IDs_to_change`
+**Samples removed:** `samples_to_remove`
+
 ```{r import data, include=FALSE, warning = FALSE}
 ##Import Sample Data 
 
