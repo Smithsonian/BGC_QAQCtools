@@ -21,13 +21,13 @@ lapply(c(
   "purrr", "tidyverse", "here", "broom", "tibble",
   "googledrive", "googlesheets4", "data.table", 
   "matrixStats", "gridExtra", "grid", "tidyverse", 
-  "knitr", "ggpattern", "stringr", "lubridate"
+  "knitr", "ggpattern", "stringr", "lubridate", "kableExtra"
 ), 
   library, character.only = TRUE)
 
 ```
 
-```{r Run Information, echo=TRUE, message=FALSE, warning=FALSE, include = FALSE}
+```{r Run Information, include = FALSE}
 ##Run Information - EDIT EACH RUN
 
 ###### Run information - PLEASE CHANGE
@@ -39,41 +39,43 @@ lapply(c(
   sample_month = "May"
   sample_year = "2026"
   
-  Project_name <- "COMPASS:Synoptic" #CO2xN/SMARTX/GENX/COMPASS:TEMPEST/COMPASS:Synoptic/CO2xNxPhrag/CO2xCOMM/GENX
-  Site <- c("GCW", "GWI", "MSM", "SWH") #whatever identifies your samples within the same names (TMP, FATE, "GWI", "MSM", "SWH"); Use "GCW" for LTREB site
+  Project_name <- "CO2xN" #/SMARTX/GENX/COMPASS:TEMPEST/COMPASS:Synoptic/CO2xNxPhrag/CO2xCOMM/GENX
+  Site <- c("GCW") #whatever identifies your samples within the same names (TMP, FATE, "GWI", "MSM", "SWH"); Use "GCW" for LTREB site
   Site_pattern <- paste(Site, collapse = "|") 
   
-  Plot <- c("UP", "TR", "SWAMP", "WC", "SW") ##Use "ALL" for LTREB sample plots, for COMPASS: "UP", "TR", "SWAMP", "WC", "SW"
+  Plot <- c("ALL") ##Use "ALL" for LTREB sample plots, for COMPASS: "UP", "TR", "SWAMP", "WC", "SW"
   Plot_pattern <- paste(Plot, collapse = "|") 
 
   #Set time zone 
   common_tz = "Etc/GMT+5"
   Sys.setenv(TZ = "America/New_York")
-
   
 ##Fix samples that were entered incorrectly - PLEASE CHANGE
   #Enter samples to remove
-  samples_to_remove <- NA
+  samples_to_remove <- c("5","6")
   
   #Enter IDs to change
-  sample_ID <- c(NA)
-  New_IDs <- c(NA)
+  sample_ID <- c("1", "2")
+  New_IDs <- c("3", "4")
   IDs_to_change <- data.frame(sample_ID, New_IDs)
 
 ##### Project-specific R Scripts ####
-  viz_script <- "Dionex_metadata_and_viz_COMPASS_Synoptic.Rmd"
+  viz_script <- "Dionex_metadata_and_viz_GCReW_CO2xN.Rmd"
 
 ###### File Names - PLEASE CHANGE 
 #file path and name for raw summary data file 
-  raw_file_name_cl = "Raw Data/COMPASS_Synoptic_CB_MonMon_202607_MSM_GWI_Cl.txt"
-  raw_file_name_so4 = "Raw Data/COMPASS_Synoptic_CB_MonMon_202607_MSM_GWI_SO4.txt"
+  raw_file_name_cl = "Raw Data/CO2xN_202605_Cl.txt"
+  raw_file_name_so4 = "Raw Data/CO2xN_202605_SO4.txt"
 
 #file path and name of processed data file 
-  processed_file_name = "Processed Data/COMPASS_SynopticCB_PW_Processed_Cl_SO4_202607.csv" 
+  processed_file_name = "Processed Data/PW_Processed_Cl_SO4_CO2xN_202605.csv" 
   
 ###### Log Files - PLEASE CHECK 
 #downloaded metadata csv - downloaded from Google drive as csv for this year
-  Metadata = "Raw Data/COMPASS_SynopticCB_PW_SampleLog_2026.csv"
+Metadata = "Raw Data/GCReW_Project_Treatment_Metadata.csv"
+
+#Dilutions table
+Dilutions_url <-  "https://raw.githubusercontent.com/Smithsonian/BGC_QAQCtools/refs/heads/main/Dionex%20Ion%20Chromatograph/2026/Dionex_Dilution_Lookup_Table.csv"
   
 #Qaqc log file path for this year 
 # Read directly from GitHub page
@@ -135,16 +137,18 @@ Log_path <- file.path(BGC_QAQCtools_repo, path_within_repo)
 metadata <- read.csv(Metadata)
 ```
 
-```{r clean_metadata_output, echo=FALSE, warning = FALSE, include = FALSE}
-##Pulls in Project-Specific Metadata cleaning chunk
+```{r clean_metadata_output, echo=FALSE, warning = FALSE, message = FALSE, eval = TRUE, results = 'hide'}
+##Pull in metadata and viz code
 external_code <- knitr::purl(
   viz_script,
   output = tempfile(fileext = ".R"),
   documentation = 2)
 knitr::read_chunk(external_code)
 
+##Pulls in Project-Specific Metadata cleaning chunk
 code <- knitr::knit_code$get("clean_metadata")
 eval(parse(text = code))
+
 ```
 
 # Run Information
@@ -154,13 +158,28 @@ eval(parse(text = code))
 **Run notes:** `r run_notes`
 
 **SO4 file used:**
-- `r basename(raw_file_name_so4)`
+`r basename(raw_file_name_so4)`
 
 **Cl file used:**
-- `r basename(raw_file_name_cl)`
+`r basename(raw_file_name_cl)`
 
-**Changed sample names:** `IDs_to_change`
-**Samples removed:** `samples_to_remove`
+**Changed sample names:** 
+```{r, echo = FALSE}
+kable(IDs_to_change)
+```
+
+**Samples removed:**
+```{r, echo = FALSE}
+print(samples_to_remove)
+```
+
+**Links:**
+
+[Base QAQC Code Template Used](https://github.com/Smithsonian/BGC_QAQCtools/blob/4ae217cebfa111747935bf9b7341911342f57fcc/Dionex%20Ion%20Chromatograph/2026/Template%20Code/Dionex_QAQC_Code_Template.Rmd)
+
+[Project-Specific QAQC Code Template Used](https://github.com/Smithsonian/BGC_QAQCtools/blob/4ae217cebfa111747935bf9b7341911342f57fcc/Dionex%20Ion%20Chromatograph/2026/Template%20Code/Dionex_metadata_and_viz_COMPASS_Synoptic.Rmd) 
+
+[Protocol](https://github.com/Smithsonian/BGC_QAQCtools/blob/4ae217cebfa111747935bf9b7341911342f57fcc/Dionex%20Ion%20Chromatograph/2026/Protocols/Cl-SO4%20Dionex%20IC%20method-April25.pdf)
 
 ```{r import data, include=FALSE, warning = FALSE}
 ##Import Sample Data 
@@ -331,7 +350,7 @@ Cl_stds_plot <- ggplot(stds, aes(x = Cl_ppm, y = Cl_area)) +
   ) +
   theme_bw()
 
-Cl_stds_plot
+# Cl_stds_plot
 
 #SO4 Curve
 SO4_stds_plot <- ggplot(stds, aes(x = SO4_ppm, y = SO4_area)) +
@@ -352,7 +371,9 @@ SO4_stds_plot <- ggplot(stds, aes(x = SO4_ppm, y = SO4_area)) +
   ) +
   theme_bw()
 
-SO4_stds_plot
+# SO4_stds_plot
+
+ggarrange(Cl_stds_plot, SO4_stds_plot, ncol=2, nrow=1, common.legend = TRUE, legend = "bottom")
 
 #compare slopes to previous runs (from log) in order to assess drift 
 # Read the CSV directly into a data frame
@@ -520,7 +541,7 @@ custom_y_breaks_Cl <- standards$Cl_std_conc
 custom_y_labels_Cl <- standards$sample_ID
 cl_chks <-  ggplot(data = chks_merged, aes(x = rep, y = Cl_ppm, fill=Cl_diff_flag)) +
         geom_bar(stat = 'identity') + 
-        scale_fill_manual(values = c("Passed check" = "darkgreen", "Failed check" = "red")) +
+        scale_fill_manual(values = c("Passed check" = "blue", "Failed check" = "darkred")) +
         theme_classic() + labs(x= " ", y="Cl (ppm)", title="Check Stds: Chloride") + 
         theme(legend.position="bottom") +  
         geom_hline(yintercept=standards$Cl_std_conc, linetype="dashed", color = "black", linewidth=1) + 
@@ -532,7 +553,7 @@ custom_y_breaks_SO4 <- standards$SO4_std_conc
 custom_y_labels_SO4 <- standards$sample_ID
 so4_chks <-  ggplot(data = chks_merged, aes(x = rep, y = SO4_ppm, fill=SO4_diff_flag)) +
         geom_bar(stat = 'identity') + 
-        scale_fill_manual(values = c("Passed check" = "darkgreen", "Failed check" = "red")) +
+        scale_fill_manual(values = c("Passed check" = "blue", "Failed check" = "darkred")) +
         theme_classic() + labs(x= " ", y="SO4  (ppm)", title="Check Stds: Sulfate") + 
         theme(legend.position="bottom") + 
         scale_y_continuous(breaks = custom_y_breaks_SO4, labels = custom_y_labels_SO4) +
@@ -604,7 +625,7 @@ cl_blks <-  ggplot(data = blks_raw, aes(x = rep, y = Cl_ppm, fill=Cl_diff_flag))
   geom_text(aes(x = max(rep), y = blk_flag_cl, label = "Lower 25% of data"), 
             vjust = -0.8,       # Moves text slightly above the line
             hjust = 1,          # Right-aligns text at the x-position
-            color = "red") + 
+            color = "darkred") + 
   scale_y_continuous(expand = expansion(mult = c(0, 0.08))) +
   labs(fill = "Blank flag") + 
   geom_text(aes(label = ifelse(Cl_ppm == 0, "0", "")), vjust = -0.5) 
@@ -621,7 +642,7 @@ so4_blks <-  ggplot(data = blks_raw, aes(x = rep, y = SO4_ppm, fill=so4_diff_fla
   geom_text(aes(x = max(rep), y = blk_flag_so4, label = "Lower 25% of data"), 
             vjust = -0.8,       # Moves text slightly above the line
             hjust = 1,          # Right-aligns text at the x-position
-            color = "red") + 
+            color = "darkred") + 
   scale_y_continuous(expand = expansion(mult = c(0, 0.08))) +
   labs(fill = "Blank flag") + 
   geom_text(aes(label = ifelse(SO4_ppm == 0, "0", "")), vjust = -0.5) 
@@ -725,24 +746,25 @@ QAdups$SO4_dups_diff_flag <-  ifelse(QAdups$SO4_dups_diff <chk_flag_dups, 'Passe
 
 
 #plot dups output as a bar graph to easily check
-Cl_dups1 <- ggplot(data =QAdups, aes(x =row_num, y =Cl_dups_diff, fill=Cl_dups_diff_flag)) +
+Cl_dups1 <- ggplot(data = QAdups, aes(x = sample_ID, y = Cl_dups_diff, fill = Cl_dups_diff_flag)) +
         geom_bar(stat = 'identity') + 
         theme_classic() + labs(x= " ", y="Difference Between Chloride Duplicates (%)") + 
-        scale_fill_manual(values = c("Passed check" = "darkgreen", "Failed check" = "red")) +
+        scale_fill_manual(values = c("Passed check" = "lightblue", "Failed check" = "darkred")) +
         geom_hline(yintercept=10, linetype="dashed", color = "black", linewidth=1)  + 
         guides(fill=guide_legend(title="Percent Difference Between Dups <10%")) +
-        labs(fill = "Duplicates flag")
+        labs(fill = "Duplicates flag") + 
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-
-SO4_dups1 <- ggplot(data =QAdups, aes(x =row_num, y =SO4_dups_diff, fill=SO4_dups_diff_flag)) +
+SO4_dups1 <- ggplot(data = QAdups, aes(x = sample_ID, y = SO4_dups_diff, fill = SO4_dups_diff_flag)) +
         geom_bar(stat = 'identity') + 
         theme_classic() + labs(x= " ", y="Difference Between Sulfate Duplicates (%)") + 
-        scale_fill_manual(values = c("Passed check" = "darkgreen", "Failed check" = "red")) +
+        scale_fill_manual(values = c("Passed check" = "lightblue", "Failed check" = "darkred")) +
         geom_hline(yintercept=10, linetype="dashed", color = "black", linewidth=1) + 
         guides(fill=guide_legend(title="Percent Difference Between Dups <10%")) +
-        labs(fill = "Duplicates flag")
+        labs(fill = "Duplicates flag") + 
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-ggarrange(Cl_dups1, SO4_dups1,ncol=2, nrow=1, common.legend = TRUE, legend = "bottom")
+ggarrange(Cl_dups1, SO4_dups1, ncol=2, nrow=1, common.legend = TRUE, legend = "bottom")
 
 #Zeros will create NAs in the flag column, so we need to switch those to Passed check's 
 QAdups <- QAdups %>%
@@ -794,7 +816,7 @@ all_dat$Cl_Conc_mM <- (all_dat$Cl_ppm / cl_mw)
 all_dat$salinity <- ((1.8070 * all_dat$Cl_ppm) + 0.026) / 1000
 
 ##Pull in Dilution Lookup Table
-dilutions <- read.csv("Dilution_Lookup_Table.csv")
+dilutions <- read.csv(Dilutions_url)
 
 dilutions <- dilutions %>% 
   filter(Project == Project_name)
@@ -861,13 +883,16 @@ QAspks$SO4_spks_flag <-  ifelse(QAspks$spk_recovery <= high_recovery_cutoff & QA
 
 # head(QAspks)
 
-#plot spk recoveries output as a bar graph to easily check - want any over 10% to be red need to work on this 
+#plot spk recoveries output as a bar graph to easily check - want any over 10% to be darkred need to work on this 
 spksbar <- ggplot(data = QAspks, aes(x = sample_ID, y = spk_recovery, fill=SO4_spks_flag)) +
             geom_bar(stat = 'identity') + 
             theme_bw() + labs(x= "Sample ID", y="SO4 Spike Recovery (%)") + 
+            geom_rect_pattern(aes(xmin = -Inf, xmax = Inf, ymin = 80, ymax = 120),  
+                              pattern = "stripe", fill = NA, pattern_fill = "black", 
+                              pattern_linetype = "dashed", pattern_size = 0.01, pattern_density = 0.1) + 
             geom_hline(yintercept=80, linetype="dashed", color = "black", linewidth=1) + 
             geom_hline(yintercept=120, linetype="dashed", color = "black", linewidth=1)+
-            scale_fill_manual(values = c("Passed check" = "darkgreen", "Failed check" = "darkred"))+
+            scale_fill_manual(values = c("Passed check" = "lavender", "Failed check" = "darkred"))+
             theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
             theme(legend.position="bottom") + 
             labs(fill = "Spikes flag")
@@ -936,7 +961,7 @@ dat_flagged <- dat_flagged %>%
 #Plot data and change colors based on flags to check it: 
 cl_samples_flag <-  ggplot(data = dat_flagged, aes(x = sample_name, y = Cl_ppm_dil, fill=Cl_Conc_flag)) +
        geom_bar(stat = 'identity') + 
-        scale_fill_manual(values = c("bdl" = "darkblue", "adl" = "red", "Within_Range" = "darkgreen")) +
+        scale_fill_manual(values = c("bdl" = "orange", "adl" = "darkred", "Within_Range" = "purple")) +
         theme_classic() + labs(x= " ", y="Cl (diluted ppm)", title="Cl: Green = Within Range of Curve") + 
         theme(plot.title = element_text(size = 12)) +
         theme(legend.position = "bottom") +
@@ -945,7 +970,7 @@ cl_samples_flag <-  ggplot(data = dat_flagged, aes(x = sample_name, y = Cl_ppm_d
 
 so4_samples_flag <-  ggplot(data = dat_flagged, aes(x = sample_name, y = SO4_ppm_dil, fill=SO4_Conc_flag)) +
        geom_bar(stat = 'identity') + 
-        scale_fill_manual(values = c("bdl" = "darkblue", "adl" = "red", "Within_Range" = "darkgreen")) +
+        scale_fill_manual(values = c("bdl" = "orange", "adl" = "darkred", "Within_Range" = "purple")) +
         theme_classic() + labs(x= " ", y="SO4 (diluted ppm)", title="SO4: Green = Within Range of Curve") + 
         theme(plot.title = element_text(size = 12)) + 
         theme(legend.position = "bottom") +
@@ -958,15 +983,19 @@ ggarrange(cl_samples_flag, so4_samples_flag, nrow=1, ncol=2, common.legend = TRU
 length = length(dat_flagged$SO4_Conc_flag) 
 Perc_SO4_flagged <- dat_flagged %>% 
   group_by(SO4_Conc_flag) %>%
-  summarise(Percent_samples = n()/length*100)
+  summarise(Percent_samples_SO4 = n()/length*100) %>% 
+  rename(Conc_flag = SO4_Conc_flag) 
 
 length = length(dat_flagged$Cl_Conc_flag) 
 Perc_Cl_flagged <- dat_flagged %>% 
   group_by(Cl_Conc_flag) %>%
-  summarise(Percent_samples = n()/length*100)
+  summarise(Percent_samples_Cl = n()/length*100) %>% 
+  rename(Conc_flag = Cl_Conc_flag) 
 
-knitr::kable(Perc_SO4_flagged, caption = "SO4 samples")
-knitr::kable(Perc_Cl_flagged, caption = "Cl samples")
+Perc_flags <- merge(Perc_SO4_flagged, Perc_Cl_flagged, by = "Conc_flag", all = TRUE) %>% 
+  mutate(across(everything(), ~replace_na(.x, 0)))
+
+knitr::kable(Perc_flags, caption = "Sample Concentration Flags")
 
 ```
 
@@ -974,6 +1003,7 @@ knitr::kable(Perc_Cl_flagged, caption = "Cl samples")
 ##Clean Data for metadata matching - Pulls in data_for_matching code chunk from project-specific RMD
 code <- knitr::knit_code$get("data_for_matching")
 eval(parse(text = code))
+# run_external_chunk(viz_script, "clean_metadata")
 ```
 
 ## Check to see if samples run match metadata & merge info
@@ -1011,6 +1041,7 @@ merged_data <- all_data_flagged %>%
 # Pull in external visualization code
 code <- knitr::knit_code$get("viz_data")
 eval(parse(text = code), envir = environment())
+# run_external_chunk(viz_script, "viz_data")
 ```
 
 ```{r clean_data_output, echo=FALSE, eval=TRUE, warning = FALSE}
@@ -1068,6 +1099,10 @@ system2("git", c(
   "push"
 ))
 
+
+knitr::knit_code$restore()
 ```
 
 #end
+
+
