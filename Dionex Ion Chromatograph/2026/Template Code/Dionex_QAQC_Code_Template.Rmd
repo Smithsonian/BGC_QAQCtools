@@ -75,8 +75,21 @@ lapply(c(
 #downloaded metadata csv - downloaded from Google drive as csv for this year
   Metadata = "Raw Data/COMPASS_SynopticCB_PW_SampleLog_2026.csv"
   
-#qaqc log file path for this year 
-  Log_path = "Raw Data/Cl_SO4_QAQClog_2026.csv"
+#Qaqc log file path for this year 
+# Read directly from GitHub page
+# Paste your raw URL inside the quotes
+Log_url <- "https://raw.githubusercontent.com/Smithsonian/BGC_QAQCtools/refs/heads/main/Dionex%20Ion%20Chromatograph/2026/Dionex_QAQClog_2026.csv"
+Log_path <- "Dionex_QAQClog_2026.csv"
+
+#1.Clone this GitHub: https://github.com/Smithsonian/BGC_QAQCtools
+#2.Open R environment
+usethis::edit_r_environ()
+#3.Only need to do this once ever: Enter this with path to your cloned BGC_QAQCtools repo on your computer: BGC_QAQCtools_REPO_PATH=Path/to/BGC_QAQCtools
+#4.Restart R 
+#5.Create actual log path
+BGC_QAQCtools_repo <- Sys.getenv("BGC_QAQCtools_REPO_PATH")
+path_within_repo <- "Dionex Ion Chromatograph/2026/Dionex_QAQClog_2026.csv"
+Log_path <- file.path(BGC_QAQCtools_repo, path_within_repo)
 
 ```
 
@@ -343,22 +356,9 @@ SO4_stds_plot <- ggplot(stds, aes(x = SO4_ppm, y = SO4_area)) +
 SO4_stds_plot
 
 #compare slopes to previous runs (from log) in order to assess drift 
-#check for the a slope QAQC file, if there is not one, make one 
-if (file.exists(Log_path)) {
-  # If it exists, read it back into R
-  log_raw <- read.csv(Log_path)
-  print("QAQC log file exists and has been read into the code.")
-  } else {
-  # If it does not exist, create the CSV file
-  log_raw <- as.data.frame(matrix(ncol = 7, nrow = 0))
-  colnames(log_raw) <- c( "X", "r2", "analyte", "curve", "run_date", "slope", "intercept")
-  
-  # Write add_log to CSV
-  write.csv(log_raw, file = Log_path, row.names = FALSE)
-  print("QAQC log file does not exist. It has been created.")
-  }
-
-log_raw <- log_raw[ ,-c(1)]
+# Read the CSV directly into a data frame
+log_raw <- read.csv(Log_url)
+log_raw$X <- NULL
 
 #make sure they both have dates in Date format
 log_raw$run_date <- as.Date(parse_date_time(log_raw$run_date, orders = c("ymd", "mdy")))
@@ -1073,6 +1073,24 @@ write.csv(final_data, processed_file_name)
   
 #write out the log file with the added lines for this run  
 write.csv(log, Log_path)
+
+# Stage the CSV
+system2("git", c(
+  "-C", shQuote(BGC_QAQCtools_repo),
+  "add", shQuote(path_within_repo)
+))
+
+# Commit changes
+system2("git", c(
+  "-C", shQuote(BGC_QAQCtools_repo),
+  "commit", "-m", shQuote("Update Dionex QAQC log")
+))
+
+# Push to GitHub
+system2("git", c(
+  "-C", shQuote(BGC_QAQCtools_repo),
+  "push"
+))
 
 ```
 
