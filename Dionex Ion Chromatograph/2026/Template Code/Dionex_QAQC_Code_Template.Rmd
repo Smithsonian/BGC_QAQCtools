@@ -13,6 +13,7 @@ output_dir: "To Be Reviewed/PDF"
 \newpage
 
 ```{r packages, include=FALSE, warning = FALSE}
+
 ##Add Required Packages
 
 #Packages that are required 
@@ -21,13 +22,13 @@ lapply(c(
   "purrr", "tidyverse", "here", "broom", "tibble",
   "googledrive", "googlesheets4", "data.table", 
   "matrixStats", "gridExtra", "grid", "tidyverse", 
-  "knitr", "ggpattern", "stringr", "lubridate", "kableExtra"
+  "knitr", "ggpattern", "stringr", "lubridate", "kableExtra", "utils"
 ), 
   library, character.only = TRUE)
 
 ```
 
-```{r Run Information, include = FALSE}
+```{r Run Information, include = FALSE, eval = TRUE}
 ##Run Information - EDIT EACH RUN
 
 ###### Run information - PLEASE CHANGE
@@ -137,20 +138,45 @@ Log_path <- file.path(BGC_QAQCtools_repo, path_within_repo)
 metadata <- read.csv(Metadata)
 ```
 
-```{r clean_metadata_output, echo=FALSE, warning = FALSE, message = FALSE, eval = TRUE, results = 'hide'}
-##Pull in metadata and viz code
+```{r Pull in external viz script, echo=FALSE, warning = FALSE, message = FALSE, eval = TRUE, results = 'hide'}
+## Pull in metadata and viz code
+
+# Save the existing chunk registry
+original_code <- knitr::knit_code$get()
+
+# Temporarily clear registered code
+knitr::knit_code$restore()
+
+# Extract the external Rmd
 external_code <- knitr::purl(
   viz_script,
   output = tempfile(fileext = ".R"),
-  documentation = 2)
+  documentation = 2,
+  quiet = TRUE
+)
+
+# Register external chunks in the temporary registry
 knitr::read_chunk(external_code)
 
+# Save extracted external chunks
+external_chunks <- knitr::knit_code$get()
+
+# Restore the main Rmd's chunks
+knitr::knit_code$restore()
+do.call(knitr::knit_code$set, original_code)
+
+# Register or replace external chunks
+do.call(knitr::knit_code$set, external_chunks)
+
+```
+
+
+```{r clean_metadata_output, echo=FALSE, warning = FALSE, message = FALSE, eval = TRUE, results = 'hide'}
 ##Pulls in Project-Specific Metadata cleaning chunk
 code <- knitr::knit_code$get("clean_metadata")
 eval(parse(text = code))
 
 ```
-
 # Run Information
 
 **Run date:** `r Date_Run`  
@@ -387,19 +413,30 @@ log_raw$curve <- as.character(log_raw$curve)
 Slopes$run_date <- as.Date(Slopes$run_date)
 
 # Filter to only rows in Slopes that are NOT already in log (by run_date + analyte)
-new_rows <- anti_join(Slopes, log_raw, by = c("run_date", "analyte"))
+# new_rows <- anti_join(Slopes, log_raw, by = c("run_date", "analyte"))
+##Check that the date you are adding hasn't already been added and if it has then have it ask you if you want to rewrite it
+ok <- NULL
+if(any(Slopes$run_date %in% log_raw$run_date)) {
+    message("WARNING: this date ", Date_Run, " already exists in log file")
+    ok <- askYesNo("Continue, overwriting previous standards data for this date? ")
+    if(isTRUE(ok)) {
+      log_raw <- anti_join(log_raw, Slopes, by = c("run_date", "analyte")  )
+      new_rows <- Slopes
+      } else { new_rows <- anti_join(Slopes, log_raw, by = c("run_date", "analyte"))}
+    } else { new_rows <- Slopes }
 
 # Append the new, non-duplicate rows to log
 log <- bind_rows(log_raw, new_rows)
 
 ##Filter for the past 6 months of data for graphing
 log_plotting <- log %>% 
-  filter(run_date >= Date_Run %m-% months(6))
+  filter(run_date %in% tail(sort(unique(run_date)), 20))
 
 #plot the current slopes with the previous slopes 
 Slopes_chk <- ggplot(log_plotting, aes(run_date, slope, col=curve)) +
   geom_point(size=4) + 
   geom_point(data = log %>% filter(run_date %in% Date_Run),color = "black", size=6, shape=8) + 
+  geom_point(data = log %>% filter(run_date %in% Date_Run),color = "black", size=4) + 
   geom_line() + 
   theme_bw() + labs(title="Slope Drift Assessment", x="Run Date", y="Slope") +
   scale_color_manual(values=c("blue", "purple"))
@@ -409,6 +446,7 @@ Slopes_chk
 areas_chk <- ggplot(log_plotting, aes(run_date, top_std_area, col=curve)) +
   geom_point(size=4) + 
   geom_point(data = log %>% filter(run_date %in% Date_Run),color = "black", size=6, shape=8) + 
+  geom_point(data = log %>% filter(run_date %in% Date_Run),color = "black", size=4) + 
   geom_line() + 
   theme_bw() + labs(title="Top STD Area Drift Assessment", x="Run Date", y="Area of Top Standard") +
   scale_color_manual(values=c("blue", "purple"))
@@ -438,6 +476,40 @@ all_dat <- all_dat %>%
       ""
     }
   )
+
+
+##Check that slopes and intercepts are within 2 sd of previous ones
+log_avgs <- log %>% 
+  filter(run_date != Date_Run) %>% 
+  group_by(analyte) %>% 
+  summarize(mean_slope = mean(slope, na.rm = TRUE), 
+            sd_slope = sd(slope, na.rm = TRUE), 
+            mean_intercept = mean(intercept, na.rm = TRUE), 
+            sd_intercept = sd(intercept, na.rm = TRUE)) %>% 
+  mutate(slope_lower_limit = mean_slope - 2*sd_slope, 
+         slope_upper_limit = mean_slope + 2*sd_slope,
+         intercept_lower_limit = mean_intercept - 2*sd_intercept,
+         intercept_upper_limit = mean_intercept + 2*sd_intercept) %>% 
+  ungroup()
+
+curve_comparison <- Slopes %>% 
+  left_join(log_avgs, by = "analyte") %>% 
+  mutate(slope_flag = case_when(
+      is.na(sd_slope) ~ "No previous slopes",
+      slope < slope_lower_limit | slope > slope_upper_limit ~ "REASSESS - Slope is greater than 2 sd of previous slopes",
+      TRUE ~ "PROCEED - Slope is within 2 sd of previous slopes")) %>% 
+  mutate(intercept_flag = case_when(
+      is.na(sd_intercept) ~ "No previous intercepts",
+      intercept < intercept_lower_limit | intercept > intercept_upper_limit ~ "REASSESS - Intercept is greater than 2 sd of previous intercepts",
+      TRUE ~ "PROCEED - Intercept is within 2 sd of previous intercepts"))
+
+# View results
+knitr::kable(
+  curve_comparison %>% dplyr::select("analyte", "slope_flag", "intercept_flag"),
+  row.names = FALSE,
+  digits = 3,
+  align = "c"
+)
 
 ```
 
@@ -652,14 +724,12 @@ ggarrange(cl_blks, so4_blks, nrow=1, ncol=2, common.legend = TRUE, legend = "bot
 #print out the average blank concentrations 
 blk_avg_cl <- data.frame(
   analyte = "Cl", 
-  curve = "Chloride (mg/L)", 
   run_date = Date_Run, 
   mean_blanks = mean(blks_raw$Cl_ppm)
 )
 
 blk_avg_so4 <- data.frame(
   analyte = "SO4", 
-  curve = "SO4 (mg/L)", 
   run_date = Date_Run, 
   mean_blanks = mean(blks_raw$SO4_ppm)
 )
@@ -667,15 +737,22 @@ blk_avg_so4 <- data.frame(
 blk_avgs <- bind_rows(blk_avg_cl, blk_avg_so4)
 
 knitr::kable(
-  blk_avgs %>% select(-curve), 
+  blk_avgs, 
   row.names = FALSE,
   digits = 3,
   align = "c"
 )
 
-##Add blank concentrations to log
-log <- log %>% 
-  left_join(blk_avgs, by = c("analyte", "curve", "run_date"))
+##Add blank concentrations to log, write over previous one for that run date and analyte
+if (!"mean_blanks" %in% names(log)) {
+  log$mean_blanks <- NA_real_
+}
+
+log <- log %>%
+  rows_update(
+    blk_avgs,
+    by = c("run_date", "analyte")
+  )
 
 #report out if flags indicate need for rerun
 ifelse(cl_blks_percent >= chks_flag, "PROCEED - >80% of Chloride Blank concentrations are in the lower 25% quartile of samples",
@@ -831,7 +908,7 @@ all_dat_dil <- all_dat %>%
 
 ```
 
-## Assess Analytical Spikes
+## Assess SO4 Spikes
 ```{r Assess Spikes, echo=FALSE, warning = FALSE}
 
 #pull out any rows that have "spk" in the Sample ID column
@@ -892,10 +969,10 @@ spksbar <- ggplot(data = QAspks, aes(x = sample_ID, y = spk_recovery, fill=SO4_s
                               pattern_linetype = "dashed", pattern_size = 0.01, pattern_density = 0.1) + 
             geom_hline(yintercept=80, linetype="dashed", color = "black", linewidth=1) + 
             geom_hline(yintercept=120, linetype="dashed", color = "black", linewidth=1)+
-            scale_fill_manual(values = c("Passed check" = "lavender", "Failed check" = "darkred"))+
+            scale_fill_manual(values = c("Passed check" = "orchid", "Failed check" = "darkred"))+
             theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
             theme(legend.position="bottom") + 
-            labs(fill = "Spikes flag")
+            labs(fill = "SO4 spikes flag")
 
 spksbar
 
@@ -1077,7 +1154,15 @@ head(final_data)
 
 #Write out data frame 
 write.csv(final_data, processed_file_name)
-  
+
+```
+
+
+```{r Export Log File, echo=FALSE, include = FALSE, warning = FALSE}
+
+log <- log %>% 
+  select("analyte", "curve", "run_date", "slope", "intercept", "r2", "top_std_area", "mean_blanks")
+
 #write out the log file with the added lines for this run  
 write.csv(log, Log_path)
 
