@@ -748,11 +748,12 @@ if (!"mean_blanks" %in% names(log)) {
   log$mean_blanks <- NA_real_
 }
 
-log <- log %>%
-  rows_update(
-    blk_avgs,
-    by = c("run_date", "analyte")
-  )
+
+log <- rows_update(
+  log %>% mutate(mean_blanks = as.numeric(mean_blanks)),
+  blk_avgs,
+  by = c("run_date", "analyte")
+)
 
 #report out if flags indicate need for rerun
 ifelse(cl_blks_percent >= chks_flag, "PROCEED - >80% of Chloride Blank concentrations are in the lower 25% quartile of samples",
@@ -1039,7 +1040,7 @@ dat_flagged <- dat_flagged %>%
 cl_samples_flag <-  ggplot(data = dat_flagged, aes(x = sample_name, y = Cl_ppm_dil, fill=Cl_Conc_flag)) +
        geom_bar(stat = 'identity') + 
         scale_fill_manual(values = c("bdl" = "orange", "adl" = "darkred", "Within_Range" = "purple")) +
-        theme_classic() + labs(x= " ", y="Cl (diluted ppm)", title="Cl: Green = Within Range of Curve") + 
+        theme_classic() + labs(x= " ", y="Cl (diluted ppm)", title="Cl") + 
         theme(plot.title = element_text(size = 12)) +
         theme(legend.position = "bottom") +
         theme(axis.text.x = element_blank()) +
@@ -1048,7 +1049,7 @@ cl_samples_flag <-  ggplot(data = dat_flagged, aes(x = sample_name, y = Cl_ppm_d
 so4_samples_flag <-  ggplot(data = dat_flagged, aes(x = sample_name, y = SO4_ppm_dil, fill=SO4_Conc_flag)) +
        geom_bar(stat = 'identity') + 
         scale_fill_manual(values = c("bdl" = "orange", "adl" = "darkred", "Within_Range" = "purple")) +
-        theme_classic() + labs(x= " ", y="SO4 (diluted ppm)", title="SO4: Green = Within Range of Curve") + 
+        theme_classic() + labs(x= " ", y="SO4 (diluted ppm)", title="SO4") + 
         theme(plot.title = element_text(size = 12)) + 
         theme(legend.position = "bottom") +
         theme(axis.text.x = element_blank()) +
