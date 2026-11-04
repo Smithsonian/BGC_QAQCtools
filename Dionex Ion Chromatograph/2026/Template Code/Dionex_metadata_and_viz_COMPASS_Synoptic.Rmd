@@ -60,14 +60,18 @@ dat_flagged <- dat_flagged %>%
 ##Reformat Sample IDs
 #202607_MSM_UP_LYSA_10CM --> GCW_202605_UP_LYSA_10CM
 dat_flagged <- dat_flagged %>%
-  separate(
-    col = sample_ID,
-    sep = "_",
-    into = c("Date", "Site_Code", "Zone", "LysID", "Depth"),
-    remove = FALSE) %>% 
-  mutate(sample_ID = paste(Site_Code, Date, Zone, LysID, Depth, sep = "_")) %>% 
-  mutate(sample_ID = gsub("_NA", "", sample_ID)) %>% 
-  select(-c(Site_Code, Date, Zone, LysID, Depth, Site))
+  mutate(Date = stringr::str_extract(sample_ID, "[0-9]{6}"),
+         Site_Code = stringr::str_extract(sample_ID, "GCW|MSM|SWH|GWI"),
+         Zone = stringr::str_extract(sample_ID, "UP|SWAMP|TR|WC|SW") ,
+         LysID = stringr::str_extract(sample_ID, "_A|_B|_C|LYSA|LYSB|LYSC"),
+         LysID = gsub("_", "", LysID),
+         Depth = stringr::str_extract(sample_ID, "10CM|20CM|45CM"), 
+         test = stringr::str_extract(sample_ID, "dup|spk")) %>% 
+  mutate(sample_ID_new = paste(Site_Code, Date, Zone, LysID, Depth, test, sep = "_")) %>% 
+  mutate(sample_ID_new = gsub("_NA", "", sample_ID)) %>% 
+  select(-c(Site_Code, Date, Zone, LysID, Depth, sample_ID)) %>% 
+  rename(sample_ID = sample_ID_new)
+
 ```
 
 ```{r viz_data}
