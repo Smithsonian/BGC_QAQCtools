@@ -69,7 +69,7 @@ dat_flagged <- dat_flagged %>%
          test = stringr::str_extract(sample_ID, "dup|spk")) %>% 
   mutate(sample_ID_new = paste(Site_Code, Date, Zone, LysID, Depth, test, sep = "_")) %>% 
   mutate(sample_ID_new = gsub("_NA", "", sample_ID)) %>% 
-  select(-c(Site_Code, Date, Zone, LysID, Depth, sample_ID)) %>% 
+  select(-c(Site_Code, Date, Zone, LysID, Depth, sample_ID, Site, Plot)) %>% 
   rename(sample_ID = sample_ID_new)
 
 ```
@@ -83,15 +83,9 @@ data_plotting <- merged_data
 data_plotting <- data_plotting %>%  
   filter(!str_detect(sample_name, "Lucie")) 
 
-##Extract data
-data_plotting <- data_plotting %>%
-  separate(
-    col = sample_ID,
-    sep = "_",
-    into = c("Date", "Site_Code", "Zone", "LysID", "Depth"),
-    remove = FALSE) %>% 
-  mutate(sample_ID = paste(Site_Code, Date, Zone, LysID, Depth, sep = "_")) %>% 
-  mutate(sample_ID = gsub("_NA", "", sample_ID))
+#Order by Site from Freshwater to Saltwater
+data_plotting$Site = factor(data_plotting$Site, levels = c("SWH",  "GCW", "MSM", "GWI"))
+data_plotting <- data_plotting[order(data_plotting$Site), ]
 
 #Order by Zone from Upland to Surface Water
 data_plotting$Zone = factor(data_plotting$Zone, levels = c("UP",  "SWAMP", "TR", "WC", "SW"))
@@ -99,14 +93,14 @@ data_plotting <- data_plotting[order(data_plotting$Zone), ]
 
 #group the data for plotting
 data_plotting <- data_plotting %>%
-  group_by(Site_Code) %>%
+  group_by(Site) %>%
   mutate(row_num = factor(row_number())) %>%  # create row_num as factor per group
   ungroup()
 
 #Plot data and change colors based on Zone:
 viz_cl_plot <- ggplot(data_plotting, aes(x = row_num, y = Cl_ppm, fill = Zone)) +
   geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) +
-  facet_grid(~ Site_Code, scales="free_x") +
+  facet_grid(~ Site, scales="free_x") +
   scale_fill_manual(values = c(
     "UP" = "#20063B",
     "SWAMP" = "darkgrey",
@@ -122,7 +116,7 @@ viz_cl_plot <- ggplot(data_plotting, aes(x = row_num, y = Cl_ppm, fill = Zone)) 
 
 viz_so4_plot <-  ggplot(data_plotting, aes(x = row_num, y = SO4_ppm, fill = Zone)) +
   geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) +
-  facet_grid(~ Site_Code, scales="free_x") +
+  facet_grid(~ Site, scales="free_x") +
   scale_fill_manual(values = c(
     "UP" = "#20063B",
     "SWAMP" = "darkgrey",
@@ -149,22 +143,20 @@ ggarrange(viz_cl_plot, viz_so4_plot, nrow=2, ncol=1)
   #create required ID columns in R, etc. 
 
 merged_data <- merged_data %>%
-  mutate(Region = "CB")
-  # rename(
-  #   Time = Time..24hr.),
-  #   Time_Zone = Time.Zone_EDT.EST,
-  #   Replicate = Lysimeter,
-  #   Sample_ID = sample_ID,
-  #   Field_notes = Field.Notes,
-  #   Site = Site_Code
-  #   # add more rename pairs as needed
-  # ) %>%
-  # select(
-  #   Project, Region, Site, Zone, Replicate, Depth_cm,
-  #        Sample_ID, Year, Month, Day, Time, Time_Zone,
-  #        SO4_ppm, SO4_Conc_mM, SO4_Conc_flag, SO4_QAQC_flag, Cl_ppm, Cl_Conc_mM, Cl_Conc_flag, Cl_QAQC_flag, salinity,
-  #        Analysis_rundate,  Run_notes, Field_notes
-  #       # list columns in the order you want them
-  # )
+  mutate(Region = "CB") %>% 
+  rename(
+    Time = Time..24hr.,
+    Time_Zone = Time.Zone_EDT.EST,
+    Replicate = Lysimeter,
+    Sample_ID = sample_ID,
+    Field_notes = Field.Notes
+    # add more rename pairs as needed
+  ) %>%
+  select(
+    Project, Region, Site, Zone, Replicate, Depth_cm,
+         Sample_ID, Year, Month, Day, Time, Time_Zone,
+         SO4_ppm, SO4_Conc_mM, SO4_Conc_flag, SO4_QAQC_flag, Cl_ppm, Cl_Conc_mM, Cl_Conc_flag, Cl_QAQC_flag, salinity, Field_notes
+        # list columns in the order you want them
+  )
 
 ```
