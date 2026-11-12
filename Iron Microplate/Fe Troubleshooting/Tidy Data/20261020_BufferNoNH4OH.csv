@@ -1,0 +1,49 @@
+﻿Abs1,1,2,3,4,5,6,7,8,9,10,11,12
+A,0.038,0.038,0.038,0.038,0.039,0.045,0.039,0.038,0.039,0.038,0.041,0.04
+B,0.047,0.046,0.045,0.046,0.046,0.047,0.04,0.039,0.038,0.039,0.039,0.038
+C,0.056,0.057,0.055,0.054,0.053,0.056,0.038,0.039,0.039,0.038,0.04,0.04
+D,0.065,0.058,0.067,0.058,0.061,0.063,0.038,0.038,0.039,0.038,0.039,0.038
+E,0.09,0.084,0.086,0.086,0.087,0.092,0.039,0.038,0.039,0.039,0.039,0.039
+F,0.125,0.128,0.134,0.127,0.117,0.142,0.039,0.039,0.039,0.038,0.039,0.039
+G,0.167,0.166,0.163,0.143,0.17,0.176,0.039,0.039,0.039,0.039,0.039,0.039
+H,0.221,0.199,0.207,0.2,0.192,0.215,0.04,0.04,0.041,0.04,0.04,0.045
+,,,,,,,,,,,,
+Abs2,1,2,3,4,5,6,7,8,9,10,11,12
+A,0.041,0.041,0.041,0.04,0.041,0.049,0.041,0.041,0.041,0.04,0.044,0.042
+B,0.053,0.054,0.053,0.053,0.051,0.052,0.048,0.048,0.047,0.044,0.044,0.044
+C,0.068,0.068,0.068,0.066,0.064,0.064,0.052,0.053,0.054,0.05,0.051,0.051
+D,0.082,0.077,0.085,0.073,0.078,0.077,0.058,0.061,0.059,0.055,0.055,0.054
+E,0.122,0.115,0.119,0.117,0.115,0.122,0.079,0.074,0.078,0.068,0.071,0.068
+F,0.18,0.181,0.181,0.163,0.158,0.191,0.099,0.103,0.099,0.081,0.084,0.089
+G,0.239,0.245,0.24,0.219,0.239,0.232,0.127,0.133,0.135,0.108,0.104,0.116
+H,0.32,0.302,0.295,0.289,0.273,0.35,0.154,0.159,0.159,0.125,0.135,0.115
+,,,,,,,,,,,,
+IDs,1,2,3,4,5,6,7,8,9,10,11,12
+A,0.5 M HCl  10M Buffer,0.5 M HCl  10M Buffer,0.5 M HCl  10M Buffer,0.5 M HCl  Conc Buffer,0.5 M HCl  Conc Buffer,0.5 M HCl  Conc Buffer,0.5 M HCl 10M Buffer,0.5 M HCl 10M Buffer,0.5 M HCl 10M Buffer,0.5 M HCl Conc Buffer,0.5 M HCl Conc Buffer,0.5 M HCl Conc Buffer
+B,3 uM Fe(II) G 10M Buffer,3 uM Fe(II) G 10M Buffer,3 uM Fe(II) G 10M Buffer,3 uM Fe(II) G Conc Buffer,3 uM Fe(II) G Conc Buffer,3 uM Fe(II) G Conc Buffer,3 uM Fe(III) G 10M Buffer,3 uM Fe(III) G 10M Buffer,3 uM Fe(III) G 10M Buffer,3 uM Fe(III) G Conc Buffer,3 uM Fe(III) G Conc Buffer,3 uM Fe(III) G Conc Buffer
+C,6 uM Fe(II) F 10M Buffer,6 uM Fe(II) F 10M Buffer,6 uM Fe(II) F 10M Buffer,6 uM Fe(II) F Conc Buffer,6 uM Fe(II) F Conc Buffer,6 uM Fe(II) F Conc Buffer,6 uM Fe(III) F 10M Buffer,6 uM Fe(III) F 10M Buffer,6 uM Fe(III) F 10M Buffer,6 uM Fe(III) F Conc Buffer,6 uM Fe(III) F Conc Buffer,6 uM Fe(III) F Conc Buffer
+D,9 uM Fe(II) E 10M Buffer,9 uM Fe(II) E 10M Buffer,9 uM Fe(II) E 10M Buffer,9 uM Fe(II) E Conc Buffer,9 uM Fe(II) E Conc Buffer,9 uM Fe(II) E Conc Buffer,9 uM Fe(III) E 10M Buffer,9 uM Fe(III) E 10M Buffer,9 uM Fe(III) E 10M Buffer,9 uM Fe(III) E Conc Buffer,9 uM Fe(III) E Conc Buffer,9 uM Fe(III) E Conc Buffer
+E,18 uM Fe(II) D 10M Buffer,18 uM Fe(II) D 10M Buffer,18 uM Fe(II) D 10M Buffer,18 uM Fe(II) D Conc Buffer,18 uM Fe(II) D Conc Buffer,18 uM Fe(II) D Conc Buffer,18 uM Fe(III) D 10M Buffer,18 uM Fe(III) D 10M Buffer,18 uM Fe(III) D 10M Buffer,18 uM Fe(III) D Conc Buffer,18 uM Fe(III) D Conc Buffer,18 uM Fe(III) D Conc Buffer
+F,30 uM Fe(II) C 10M Buffer,30 uM Fe(II) C 10M Buffer,30 uM Fe(II) C 10M Buffer,30 uM Fe(II) C Conc Buffer,30 uM Fe(II) C Conc Buffer,30 uM Fe(II) C Conc Buffer,30 uM Fe(III) C 10M Buffer,30 uM Fe(III) C 10M Buffer,30 uM Fe(III) C 10M Buffer,30 uM Fe(III) C Conc Buffer,30 uM Fe(III) C Conc Buffer,30 uM Fe(III) C Conc Buffer
+G,45 uM Fe(II) B 10M Buffer,45 uM Fe(II) B 10M Buffer,45 uM Fe(II) B 10M Buffer,45 uM Fe(II) B Conc Buffer,45 uM Fe(II) B Conc Buffer,45 uM Fe(II) B Conc Buffer,45 uM Fe(III) B 10M Buffer,45 uM Fe(III) B 10M Buffer,45 uM Fe(III) B 10M Buffer,45 uM Fe(III) B Conc Buffer,45 uM Fe(III) B Conc Buffer,45 uM Fe(III) B Conc Buffer
+H,60 uM Fe(II) A 10M Buffer,60 uM Fe(II) A 10M Buffer,60 uM Fe(II) A 10M Buffer,60 uM Fe(II) A Conc Buffer,60 uM Fe(II) A Conc Buffer,60 uM Fe(II) A Conc Buffer,60 uM Fe(III) A 10M Buffer,60 uM Fe(III) A 10M Buffer,60 uM Fe(III) A 10M Buffer,60 uM Fe(III) A Conc Buffer,60 uM Fe(III) A Conc Buffer,60 uM Fe(III) A Conc Buffer
+,,,,,,,,,,,,
+Dilution,1,2,3,4,5,6,7,8,9,10,11,12
+A,1,1,1,1,1,1,1,1,1,1,1,1
+B,1,1,1,1,1,1,1,1,1,1,1,1
+C,1,1,1,1,1,1,1,1,1,1,1,1
+D,1,1,1,1,1,1,1,1,1,1,1,1
+E,1,1,1,1,1,1,1,1,1,1,1,1
+F,1,1,1,1,1,1,1,1,1,1,1,1
+G,1,1,1,1,1,1,1,1,1,1,1,1
+H,1,1,1,1,1,1,1,1,1,1,1,1
+,,,,,,,,,,,,
+Conc_uM,1,2,3,4,5,6,7,8,9,10,11,12
+A,0,0,0,0,0,0,0,0,0,0,0,0
+B,3,3,3,3,3,3,3,3,3,3,3,3
+C,6,6,6,6,6,6,6,6,6,6,6,6
+D,9,9,9,9,9,9,9,9,9,9,9,9
+E,18,18,18,18,18,18,18,18,18,18,18,18
+F,30,30,30,30,30,30,30,30,30,30,30,30
+G,45,45,45,45,45,45,45,45,45,45,45,45
+H,60,60,60,60,60,60,60,60,60,60,60,60
