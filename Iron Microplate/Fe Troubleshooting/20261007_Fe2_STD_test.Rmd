@@ -677,8 +677,8 @@ Abs2_difference
 Abs1_difference <- ggplot(FE_STD_CV_fin %>% filter(IDs %like% "Fe[(]II[)]") , aes(Abs1, Abs2, colour = Plate)) + geom_point(size = 3) +
   #geom_smooth(method = "lm", formula = "y ~ x", se = FALSE) +
   geom_abline(slope = 1, intercept=0)+
-  labs(title = "How Abs1 compares 2 Abs2 for buffer tests", x = "Abs1", y = "Abs2") +
-  annotate("text",y=.13 ,x=.145, label= "1:1 line")+
+  labs(title = "How Abs1 compares 2 Abs2", x = "Abs1", y = "Abs2") +
+  annotate("text",y=.13 ,x=.22, label= "1:1 line")+
   theme_classic()
 Abs1_difference
 
